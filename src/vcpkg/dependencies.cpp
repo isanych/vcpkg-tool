@@ -1126,7 +1126,7 @@ namespace vcpkg
                 else
                 {
                     use_head_version = UseHeadVersion::No;
-                    editable = Editable::No;
+                    editable = editable_if_user_requested;
                 }
 
                 plan.install_actions.emplace_back(p_cluster->m_spec,
