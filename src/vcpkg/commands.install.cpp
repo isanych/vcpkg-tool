@@ -46,9 +46,9 @@ namespace vcpkg
 
     const Path& InstallDir::listfile() const { return this->m_listfile; }
 
-    void install_package_and_write_listfile(const Filesystem& fs,
-                                            const Path& source_dir,
-                                            const InstallDir& destination_dir)
+    static void install_package_and_write_listfile(const Filesystem& fs,
+                                                   const Path& source_dir,
+                                                   const InstallDir& destination_dir)
     {
         Checks::check_exit(VCPKG_LINE_INFO,
                            fs.exists(source_dir, IgnoreErrors{}),
@@ -86,7 +86,7 @@ namespace vcpkg
 
             const auto filename = file.filename();
             if (vcpkg::is_regular_file(status) &&
-                (filename == "CONTROL" || filename == "vcpkg.json" || filename == "BUILD_INFO"))
+                (filename == FileControl || filename == FileVcpkgDotJson || filename == FileBuildInfo))
             {
                 // Do not copy the control file or manifest file
                 continue;
@@ -217,11 +217,13 @@ namespace vcpkg
         return SortedVector<file_pack>(std::move(installed_files));
     }
 
-    InstallResult install_package(const VcpkgPaths& paths, const BinaryControlFile& bcf, StatusParagraphs* status_db)
+    static InstallResult install_package(const VcpkgPaths& paths,
+                                         const Path& package_dir,
+                                         const BinaryControlFile& bcf,
+                                         StatusParagraphs* status_db)
     {
         auto& fs = paths.get_filesystem();
         const auto& installed = paths.installed();
-        const auto package_dir = paths.package_dir(bcf.core_paragraph.spec);
         Triplet triplet = bcf.core_paragraph.spec.triplet();
         const std::vector<StatusParagraphAndAssociatedFiles> pgh_and_files =
             get_installed_files_and_upgrade(fs, installed, *status_db);
@@ -389,7 +391,8 @@ namespace vcpkg
             BuildResult code;
             if (all_dependencies_satisfied)
             {
-                const auto install_result = install_package(paths, *bcf, &status_db);
+                const auto install_result =
+                    install_package(paths, action.package_dir.value_or_exit(VCPKG_LINE_INFO), *bcf, &status_db);
                 switch (install_result)
                 {
                     case InstallResult::SUCCESS: code = BuildResult::Succeeded; break;
