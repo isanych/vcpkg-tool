@@ -34,15 +34,6 @@ namespace
             cmd.string_arg("-H").string_arg(header);
         }
     }
-
-    void replace_secrets(std::string& target, View<std::string> secrets)
-    {
-        const auto replacement = msg::format(msgSecretBanner);
-        for (const auto& secret : secrets)
-        {
-            Strings::inplace_replace_all(target, secret, replacement);
-        }
-    }
 }
 
 namespace vcpkg
@@ -688,7 +679,7 @@ namespace vcpkg
             prefix_cmd.raw_arg(prefixArgs);
         }
 
-        prefix_cmd.string_arg("--retry").string_arg("3").string_arg("-L").string_arg("-w").string_arg(
+        prefix_cmd.string_arg("--retry").string_arg("3").string_arg("-L").string_arg("-sS").string_arg("-w").string_arg(
             GUID_MARKER "%{http_code} %{exitcode} %{errormsg}\\n");
 #undef GUID_MARKER
 
@@ -818,7 +809,7 @@ namespace vcpkg
         settings.stdin_content = Json::stringify(snapshot);
         int code = 0;
         auto result = cmd_execute_and_stream_lines(context, cmd, settings, [&code](StringView line) {
-            if (Strings::starts_with(line, guid_marker))
+            if (line.starts_with(guid_marker))
             {
                 code = std::strtol(line.data() + guid_marker.size(), nullptr, 10);
             }
@@ -841,7 +832,7 @@ namespace vcpkg
     {
         static constexpr StringLiteral guid_marker = "9a1db05f-a65d-419b-aa72-037fb4d0672e";
 
-        if (Strings::starts_with(raw_url, "ftp://"))
+        if (raw_url.starts_with("ftp://"))
         {
             // HTTP headers are ignored for FTP clients
             auto ftp_cmd = Command{"curl"};
@@ -870,7 +861,7 @@ namespace vcpkg
         http_cmd.string_arg("-T").string_arg(file);
         int code = 0;
         auto res = cmd_execute_and_stream_lines(context, http_cmd, [&code](StringView line) {
-            if (Strings::starts_with(line, guid_marker))
+            if (line.starts_with(guid_marker))
             {
                 code = std::strtol(line.data() + guid_marker.size(), nullptr, 10);
             }
@@ -906,6 +897,7 @@ namespace vcpkg
                                               StringLiteral method,
                                               View<std::string> headers,
                                               StringView raw_url,
+                                              View<std::string> secrets,
                                               StringView data)
     {
         auto cmd = Command{"curl"}.string_arg("-s").string_arg("-L");
@@ -921,7 +913,7 @@ namespace vcpkg
         cmd.string_arg(url_encode_spaces(raw_url));
 
         auto maybe_output = cmd_execute_and_capture_output(context, cmd);
-        if (auto output = check_zero_exit_code(context, maybe_output, "curl"))
+        if (auto output = check_zero_exit_code(context, cmd, maybe_output, secrets))
         {
             return *output;
         }
@@ -1170,7 +1162,10 @@ namespace vcpkg
 #endif
         // Create directory in advance, otherwise curl will create it in 750 mode on unix style file systems.
         const auto dir = download_path_part_path.parent_path();
-        fs.create_directories(dir, VCPKG_LINE_INFO);
+        if (!dir.empty())
+        {
+            fs.create_directories(dir, VCPKG_LINE_INFO);
+        }
 
         auto cmd = Command{"curl"}
                        .string_arg("--fail")
@@ -1273,7 +1268,7 @@ namespace vcpkg
                                 StringLiteral prefix,
                                 StringView this_line)
     {
-        if (!Strings::starts_with(this_line, prefix))
+        if (!this_line.starts_with(prefix))
         {
             return false;
         }
@@ -1440,7 +1435,8 @@ namespace vcpkg
         }
 
         context.statusln(msg::format(msgAssetCacheConsultScript, msg::path = display_path));
-        const auto download_path_part_path = fmt::format("{}.{}.part", download_path, get_process_id());
+        const auto download_path_part_path =
+            fmt::format("{}.{}.part", fs.absolute(download_path, VCPKG_LINE_INFO), get_process_id());
         Lazy<std::string> escaped_url;
         const auto escaped_dpath = Command(download_path_part_path).extract();
         auto maybe_raw_command = api_stable_format(context, *script, [&](std::string& out, StringView key) {

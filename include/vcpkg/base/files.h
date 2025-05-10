@@ -213,6 +213,7 @@ namespace vcpkg
 
         virtual Path absolute(const Path& target, std::error_code& ec) const = 0;
         Path absolute(const Path& target, LineInfo li) const;
+        Optional<Path> absolute(DiagnosticContext& context, const Path& target) const;
 
         virtual std::vector<Path> find_from_PATH(View<StringView> stems) const = 0;
         std::vector<Path> find_from_PATH(StringView stem) const;
@@ -258,6 +259,7 @@ namespace vcpkg
         // If `old_path` and `new_path` resolve to the same file, the behavior is undefined.
         bool rename_or_delete(const Path& old_path, const Path& new_path, std::error_code& ec) const;
         bool rename_or_delete(const Path& old_path, const Path& new_path, LineInfo li) const;
+        Optional<bool> rename_or_delete(DiagnosticContext& context, const Path& old_path, const Path& new_path) const;
 
         virtual bool remove(const Path& target, std::error_code& ec) const = 0;
         bool remove(const Path& target, LineInfo li) const;
@@ -265,6 +267,7 @@ namespace vcpkg
         virtual void remove_all(const Path& base, std::error_code& ec, Path& failure_point) const = 0;
         void remove_all(const Path& base, std::error_code& ec) const;
         void remove_all(const Path& base, LineInfo li) const;
+        bool remove_all(DiagnosticContext& context, const Path& base) const;
 
         void remove_all_inside(const Path& base, std::error_code& ec, Path& failure_point) const;
         void remove_all_inside(const Path& base, std::error_code& ec) const;
@@ -272,9 +275,11 @@ namespace vcpkg
 
         virtual bool create_directory(const Path& new_directory, std::error_code& ec) const = 0;
         bool create_directory(const Path& new_directory, LineInfo li) const;
+        Optional<bool> create_directory(DiagnosticContext& context, const Path& new_directory) const;
 
         virtual bool create_directories(const Path& new_directory, std::error_code& ec) const = 0;
         bool create_directories(const Path& new_directory, LineInfo) const;
+        Optional<bool> create_directories(DiagnosticContext& context, const Path& new_directory) const;
 
         virtual Path create_or_get_temp_directory(std::error_code& ec) const = 0;
         Path create_or_get_temp_directory(LineInfo) const;
@@ -309,6 +314,11 @@ namespace vcpkg
 
         virtual void copy_symlink(const Path& source, const Path& destination, std::error_code& ec) const = 0;
         void copy_symlink(const Path& source, const Path& destination, LineInfo li) const;
+
+        virtual int64_t file_time_now() const = 0;
+
+        virtual int64_t last_write_time(const Path& target, std::error_code& ec) const = 0;
+        int64_t last_write_time(const Path& target, LineInfo li) const noexcept;
 
         using ReadOnlyFilesystem::current_path;
         virtual void current_path(const Path& new_current_path, std::error_code&) const = 0;

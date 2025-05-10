@@ -18,7 +18,7 @@ jobs:
             preset: linux-ci
           - os: ubuntu-24.04-arm
             preset: linux-arm64-ci
-          - os: macos-13
+          - os: macos-14
             preset: macos-ci
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -29,14 +29,10 @@ jobs:
           node-version: "18.x"
           cache: 'npm'
           cache-dependency-path: vcpkg-artifacts/package-lock.json
-      - uses: lukka/get-cmake@v3.31.0
-        with:
-          cmakeVersion: 3.22.1 # ubuntu 22.04
-          ninjaVersion: 1.11.1
       - name: Enable Problem Matchers
         run: echo "::add-matcher::.github/workflows/matchers.json"
       - name: '[CI Only] Initialize CodeQL'
-        if: inputs.codeql
+        if: inputs.codeql && matrix.preset != 'linux-arm64-ci'
         uses: github/codeql-action/init@v3
         with:
           languages: javascript-typescript, c-cpp
@@ -58,7 +54,7 @@ jobs:
           IF %ERRORLEVEL% NEQ 0 exit /B %ERRORLEVEL%
           cmake --build --preset ${{ matrix.preset }} -- -k0
       - name: '[CI Only] Perform CodeQL Analysis'
-        if: inputs.codeql
+        if: inputs.codeql && matrix.preset != 'linux-arm64-ci'
         uses: github/codeql-action/analyze@v3
       - name: Run vcpkg unit tests
         run: ctest --preset ${{ matrix.preset }} --output-on-failure 2>&1

@@ -165,7 +165,7 @@ namespace vcpkg
     {
         auto parser = ParserBase(str, origin, textrowcol);
         auto opt = parse_list_until_eof<std::string>(msgExpectedDefaultFeaturesList, parser, &parse_feature_name);
-        if (!opt) return {LocalizedString::from_raw(parser.get_error()->to_string()), expected_right_tag};
+        if (!opt) return {parser.messages().join(), expected_right_tag};
         return {std::move(opt).value_or_exit(VCPKG_LINE_INFO), expected_left_tag};
     }
     ExpectedL<std::vector<ParsedQualifiedSpecifier>> parse_qualified_specifier_list(const std::string& str,
@@ -178,7 +178,7 @@ namespace vcpkg
                 return parse_qualified_specifier(
                     parser, AllowFeatures::Yes, ParseExplicitTriplet::Allow, AllowPlatformSpec::Yes);
             });
-        if (!opt) return {LocalizedString::from_raw(parser.get_error()->to_string()), expected_right_tag};
+        if (!opt) return {parser.messages().join(), expected_right_tag};
 
         return {std::move(opt).value_or_exit(VCPKG_LINE_INFO), expected_left_tag};
     }
@@ -191,22 +191,25 @@ namespace vcpkg
             return parse_qualified_specifier(
                        parser, AllowFeatures::Yes, ParseExplicitTriplet::Forbid, AllowPlatformSpec::Yes)
                 .then([&](ParsedQualifiedSpecifier&& pqs) -> Optional<Dependency> {
-                    Dependency dependency{pqs.name, {}, pqs.platform.value_or({})};
-                    for (const auto& feature : pqs.features.value_or({}))
+                    Dependency dependency{pqs.name.value, {}, pqs.platform_or_always_true()};
+                    if (auto pfeatures = pqs.features.get())
                     {
-                        if (feature == FeatureNameCore)
+                        for (auto&& feature : std::move(*pfeatures))
                         {
-                            dependency.default_features = false;
-                        }
-                        else
-                        {
-                            dependency.features.push_back({feature});
+                            if (feature.value == FeatureNameCore)
+                            {
+                                dependency.default_features = false;
+                            }
+                            else
+                            {
+                                dependency.features.push_back({std::move(feature).value});
+                            }
                         }
                     }
                     return dependency;
                 });
         });
-        if (!opt) return {LocalizedString::from_raw(parser.get_error()->to_string()), expected_right_tag};
+        if (!opt) return {parser.messages().join(), expected_right_tag};
 
         return {std::move(opt).value_or_exit(VCPKG_LINE_INFO), expected_left_tag};
     }
@@ -280,7 +283,11 @@ namespace vcpkg::Paragraphs
                 get_paragraph(paragraphs.emplace_back());
                 match_while(is_lineend);
             }
-            if (get_error()) return LocalizedString::from_raw(get_error()->to_string());
+
+            if (messages().any_errors())
+            {
+                return messages().join();
+            }
 
             return paragraphs;
         }
@@ -411,8 +418,10 @@ namespace vcpkg::Paragraphs
 
             return PortLoadResult{try_load_port_manifest_text(manifest_contents, manifest_path, out_sink)
                                       .map([&](std::unique_ptr<SourceControlFile>&& scf) {
-                                          return SourceControlFileAndLocation{
-                                              std::move(scf), std::move(manifest_path), port_location.spdx_location};
+                                          return SourceControlFileAndLocation{std::move(scf),
+                                                                              std::move(manifest_path),
+                                                                              port_location.spdx_location,
+                                                                              port_location.kind};
                                       }),
                                   manifest_contents};
         }
@@ -431,8 +440,10 @@ namespace vcpkg::Paragraphs
         {
             return PortLoadResult{try_load_control_file_text(control_contents, control_path)
                                       .map([&](std::unique_ptr<SourceControlFile>&& scf) {
-                                          return SourceControlFileAndLocation{
-                                              std::move(scf), std::move(control_path), port_location.spdx_location};
+                                          return SourceControlFileAndLocation{std::move(scf),
+                                                                              std::move(control_path),
+                                                                              port_location.spdx_location,
+                                                                              port_location.kind};
                                       }),
                                   control_contents};
         }
@@ -477,6 +488,31 @@ namespace vcpkg::Paragraphs
         }
 
         return load_result;
+    }
+
+    std::string builtin_port_spdx_location(StringView port_name)
+    {
+        std::string spdx_location = "git+https://github.com/Microsoft/vcpkg#ports/";
+        spdx_location.append(port_name.data(), port_name.size());
+        return spdx_location;
+    }
+
+    std::string builtin_git_tree_spdx_location(StringView git_tree)
+    {
+        std::string spdx_location = "git+https://github.com/Microsoft/vcpkg@";
+        spdx_location.append(git_tree.data(), git_tree.size());
+        return spdx_location;
+    }
+
+    PortLoadResult try_load_builtin_port_required(const ReadOnlyFilesystem& fs,
+                                                  StringView port_name,
+                                                  const Path& builtin_ports_directory)
+    {
+        return Paragraphs::try_load_port_required(fs,
+                                                  port_name,
+                                                  PortLocation{builtin_ports_directory / port_name,
+                                                               builtin_port_spdx_location(port_name),
+                                                               PortSourceKind::Builtin});
     }
 
     ExpectedL<BinaryControlFile> try_load_cached_package(const ReadOnlyFilesystem& fs,
