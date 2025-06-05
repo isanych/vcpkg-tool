@@ -80,7 +80,7 @@ namespace vcpkg
         if (minimum_last_write_time > 0)
         {
             Util::erase_remove_if(children, [&](Path& path) {
-                return filesystem.last_write_time(path, VCPKG_LINE_INFO) >= minimum_last_write_time;
+                return filesystem.last_write_time(path, VCPKG_LINE_INFO) < minimum_last_write_time;
             });
         }
         auto target_path = base_path / spec.name();
@@ -994,6 +994,10 @@ namespace vcpkg
         else if (cmake_system_name == "OpenBSD")
         {
             return m_paths.scripts / "toolchains/openbsd.cmake";
+        }
+        else if (cmake_system_name == "SunOS")
+        {
+            return m_paths.scripts / "toolchains/solaris.cmake";
         }
         else if (cmake_system_name == "Android")
         {

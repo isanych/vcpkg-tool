@@ -130,13 +130,9 @@ DECLARE_MESSAGE(AllFormatArgsUnbalancedBraces,
                 (msg::value),
                 "example of {value} is 'foo bar {'",
                 "unbalanced brace in format string \"{value}\"")
-DECLARE_MESSAGE(AllPackagesAreUpdated, (), "", "All installed packages are up-to-date.")
+DECLARE_MESSAGE(AllPackagesAreUpdated, (), "", "No action taken because all installed packages are up-to-date.")
 DECLARE_MESSAGE(AllShasValid, (), "sha = sha512 of url", "All checked sha's are valid.")
 DECLARE_MESSAGE(AlreadyInstalled, (msg::spec), "", "{spec} is already installed")
-DECLARE_MESSAGE(AlreadyInstalledNotHead,
-                (msg::spec),
-                "'HEAD' means the most recent version of source code",
-                "{spec} is already installed -- not building from HEAD")
 DECLARE_MESSAGE(AManifest, (), "", "a manifest")
 DECLARE_MESSAGE(AMaximumOfOneAssetReadUrlCanBeSpecified, (), "", "a maximum of one asset read url can be specified.")
 DECLARE_MESSAGE(AMaximumOfOneAssetWriteUrlCanBeSpecified, (), "", "a maximum of one asset write url can be specified.")
@@ -759,6 +755,7 @@ DECLARE_MESSAGE(CmdInstallExample1,
                 "This is a command line, only the <> parts should be localized",
                 "vcpkg install <port name> <port name>...")
 DECLARE_MESSAGE(CmdIntegrateSynopsis, (), "", "Integrates vcpkg with machines, projects, or shells")
+DECLARE_MESSAGE(CmdLicenseReportSynopsis, (), "", "Displays the declared licenses of all ports in the installed tree")
 DECLARE_MESSAGE(CmdListExample2,
                 (),
                 "This is a command line, only the <filter> part should be localized",
@@ -1363,6 +1360,7 @@ DECLARE_MESSAGE(FeatureBaselineExpectedFeatures,
                 "When using '{value}' a list of features must be specified.")
 DECLARE_MESSAGE(FeatureBaselineFormatted, (), "", "Succeeded in formatting the feature baseline file.")
 DECLARE_MESSAGE(FeatureBaselineNoFeaturesForFail, (), "", "When using '= fail' no list of features is allowed.")
+DECLARE_MESSAGE(FeatureBaselineNoFeaturesForPass, (), "", "When using '= pass' no list of features is allowed.")
 DECLARE_MESSAGE(FeatureTestProblems, (), "", "There are some feature test problems!")
 DECLARE_MESSAGE(FileIsNotExecutable, (), "", "this file does not appear to be executable")
 DECLARE_MESSAGE(FilesRelativeToTheBuildDirectoryHere, (), "", "the files are relative to the build directory here")
@@ -1787,6 +1785,11 @@ DECLARE_MESSAGE(InstallCopiedFile,
                 "{path_source} -> {path_destination} done")
 DECLARE_MESSAGE(InstalledBy, (msg::path), "", "Installed by {path}")
 DECLARE_MESSAGE(InstalledPackages, (), "", "The following packages are already installed:")
+DECLARE_MESSAGE(InstalledPackagesHead,
+                (),
+                "",
+                "The following packages are already installed, but were requested at --head version. Their installed "
+                "contents will not be changed. To get updated versions, remove these packages first:")
 DECLARE_MESSAGE(InstalledRequestedPackages, (), "", "All requested packages are currently installed.")
 DECLARE_MESSAGE(InstallFailed, (msg::path, msg::error_msg), "", "failed: {path}: {error_msg}")
 DECLARE_MESSAGE(InstallingFromFilesystemRegistry, (), "", "installing from filesystem registry here")
@@ -2086,7 +2089,6 @@ DECLARE_MESSAGE(LicenseExpressionExpectLicenseFoundCompound,
                 "Example of {value} is 'AND'",
                 "Expected a license name, found the compound {value}.")
 DECLARE_MESSAGE(LicenseExpressionExpectLicenseFoundEof, (), "", "Expected a license name, found the end of the string.")
-DECLARE_MESSAGE(LicenseExpressionExpectLicenseFoundParen, (), "", "Expected a license name, found a parenthesis.")
 DECLARE_MESSAGE(LicenseExpressionImbalancedParens,
                 (),
                 "",
@@ -2217,6 +2219,11 @@ DECLARE_MESSAGE(NoInstalledPackages,
                 (),
                 "The name 'search' is the name of a command that is not localized.",
                 "No packages are installed. Did you mean `search`?")
+DECLARE_MESSAGE(NoInstalledPackagesLicenseReport,
+                (),
+                "",
+                "There are no installed packages, and thus no licenses of installed packages. Did you mean to install "
+                "something first?")
 DECLARE_MESSAGE(NonExactlyArgs,
                 (msg::command_name, msg::expected, msg::actual),
                 "{expected} and {actual} are integers",
@@ -2289,6 +2296,21 @@ DECLARE_MESSAGE(OverwritingFile, (msg::path), "", "File {path} was already prese
 DECLARE_MESSAGE(PackageAbi, (msg::spec, msg::package_abi), "", "{spec} package ABI: {package_abi}")
 DECLARE_MESSAGE(PackageAlreadyRemoved, (msg::spec), "", "unable to remove {spec}: already removed")
 DECLARE_MESSAGE(PackageDiscoveryHeader, (), "", "Package Discovery")
+DECLARE_MESSAGE(PackageLicenseSpdx, (), "", "Installed packages declare the following licenses:")
+DECLARE_MESSAGE(PackageLicenseSpdxThisInstall,
+                (),
+                "",
+                "Packages installed in this vcpkg installation declare the following licenses:")
+DECLARE_MESSAGE(PackageLicenseUnknown,
+                (),
+                "",
+                "Some packages did not declare an SPDX license. Check the `copyright` file for each package for more "
+                "information about their licensing.")
+DECLARE_MESSAGE(PackageLicenseWarning,
+                (),
+                "",
+                "Installed contents are licensed to you by owners. Microsoft is not responsible for, nor does it grant "
+                "any licenses to, third-party packages.")
 DECLARE_MESSAGE(PackageManipulationHeader, (), "", "Package Manipulation")
 DECLARE_MESSAGE(PackageInfoHelp, (), "", "Display detailed information on packages")
 DECLARE_MESSAGE(PackageFailedtWhileExtracting,
@@ -2812,6 +2834,10 @@ DECLARE_MESSAGE(ToRemovePackages,
                 "",
                 "To only remove outdated packages, run\n{command_name} remove --outdated")
 DECLARE_MESSAGE(TotalInstallTime, (msg::elapsed), "", "Total install time: {elapsed}")
+DECLARE_MESSAGE(TotalInstallTimeSuccess,
+                (msg::elapsed),
+                "",
+                "All requested installations completed successfully in: {elapsed}")
 DECLARE_MESSAGE(ToUpdatePackages,
                 (msg::command_name),
                 "",
@@ -2887,15 +2913,67 @@ DECLARE_MESSAGE(UnexpectedPortversion,
                 (),
                 "'field' means a JSON key/value pair here",
                 "unexpected \"port-version\" without a versioning field")
-DECLARE_MESSAGE(UnexpectedState,
-                (msg::feature_spec, msg::actual, msg::elapsed),
-                "{actual} is the actual state, e.g. 'pass', 'skip', ...",
-                "{feature_spec} resulted in the unexpected state {actual} after {elapsed}")
+DECLARE_MESSAGE(UnexpectedStateFailedPass,
+                (msg::feature_spec),
+                "",
+                "{feature_spec} build failed but was expected to pass")
+DECLARE_MESSAGE(UnexpectedStateFailedCascade,
+                (msg::feature_spec),
+                "",
+                "{feature_spec} build failed but was expected to be a cascaded failure")
+DECLARE_MESSAGE(UnexpectedStateFailedNoteConsiderSkippingPort,
+                (msg::package_name, msg::spec),
+                "",
+                "consider adding `{package_name}=fail`, or `{spec}=fail`, or equivalent skips")
+DECLARE_MESSAGE(
+    UnexpectedStateFailedNoteConsiderSkippingPortOrCombination,
+    (msg::package_name, msg::spec, msg::feature_spec),
+    "",
+    "consider adding `{package_name}=fail`, `{spec}=fail`, `{feature_spec}=combination-fails`, or equivalent skips, or "
+    "by marking mutually exclusive features as options")
+DECLARE_MESSAGE(UnexpectedStateFailedNoteFeatureMarkedCascade,
+                (),
+                "",
+                "consider changing this `=cascade` to `=feature-fails` and/or one or more `=combination-fails`")
+DECLARE_MESSAGE(UnexpectedStateFailedNoteMoreFeaturesRequired,
+                (msg::package_name),
+                "",
+                "if some features are required, consider effectively always enabling those parts in portfile.cmake for "
+                "{package_name}, or consider adding `{package_name}[required-feature]=options` to include "
+                "'required-feature' in all tests")
+DECLARE_MESSAGE(UnexpectedStateFailedNotePortMarkedCascade, (), "", "consider changing this `=cascade` to `=fail`")
+DECLARE_MESSAGE(UnexpectedStateFailedNoteSeparateCombinationFails,
+                (msg::feature_spec, msg::feature),
+                "",
+                "if {feature} succeeds when built with other features but not alone, consider adding "
+                "`{feature_spec}=combination-fails`")
+DECLARE_MESSAGE(UnexpectedStateFailedNoteSeparateFeatureFails,
+                (msg::feature_spec, msg::feature),
+                "",
+                "if {feature} always fails, consider adding `{feature_spec}=feature-fails`, which will mark this "
+                "test as failing, and remove {feature} from combined feature testing")
+DECLARE_MESSAGE(UnexpectedStatePassFeatureMarkedCascade,
+                (msg::feature_spec, msg::feature),
+                "",
+                "{feature_spec} passed but {feature} was marked expected to be a cascaded failure")
+DECLARE_MESSAGE(UnexpectedStatePassFeatureMarkedFail,
+                (msg::feature_spec, msg::feature),
+                "",
+                "{feature_spec} passed but {feature} was marked expected to fail")
+DECLARE_MESSAGE(UnexpectedStatePassPortMarkedCascade,
+                (msg::feature_spec),
+                "",
+                "{feature_spec} passed but was marked expected to be a cascaded failure")
+DECLARE_MESSAGE(UnexpectedStatePassPortMarkedFail,
+                (msg::feature_spec),
+                "",
+                "{feature_spec} passed but was marked expected to fail")
 DECLARE_MESSAGE(
     UnexpectedStateCascade,
     (msg::feature_spec),
     "",
     "{feature_spec} was unexpectedly a cascading failure because the following dependencies are unavailable:")
+DECLARE_MESSAGE(UnexpectedStateCascadePortNote, (), "", "consider changing this to =cascade instead")
 DECLARE_MESSAGE(UnexpectedSwitch,
                 (msg::option),
                 "Switch is a command line switch like --switch",
