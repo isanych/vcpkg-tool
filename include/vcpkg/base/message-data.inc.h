@@ -187,11 +187,6 @@ DECLARE_MESSAGE(ARegistryPathMustStartWithDollar,
                 "A registry path must start with `$` to mean the registry root; for example, `$/foo/bar`.")
 DECLARE_MESSAGE(ARelaxedVersionString, (), "", "a relaxed version string")
 DECLARE_MESSAGE(ArtifactsBootstrapFailed, (), "", "vcpkg-artifacts is not installed and could not be bootstrapped.")
-DECLARE_MESSAGE(ArtifactsNotInstalledReadonlyRoot,
-                (),
-                "",
-                "vcpkg-artifacts is not installed, and it can't be installed because VCPKG_ROOT is assumed to be "
-                "readonly. Reinstalling vcpkg using the 'one liner' may fix this problem.")
 DECLARE_MESSAGE(ArtifactsOptionIncompatibility, (msg::option), "", "--{option} has no effect on find artifact.")
 DECLARE_MESSAGE(ArtifactsOptionJson,
                 (),
@@ -487,6 +482,10 @@ DECLARE_MESSAGE(CiBaselineRegression,
                 (msg::spec, msg::build_result, msg::path),
                 "",
                 "REGRESSION: {spec} failed with {build_result}. If expected, add {spec}=fail to {path}.")
+DECLARE_MESSAGE(CiBaselineRegressionNoPath,
+                (msg::spec, msg::build_result),
+                "",
+                "REGRESSION: {spec} failed with {build_result}.")
 DECLARE_MESSAGE(CiBaselineRegressionHeader,
                 (),
                 "Printed before a series of CiBaselineRegression and/or CiBaselineUnexpectedPass messages.",
@@ -679,6 +678,10 @@ DECLARE_MESSAGE(CmdExportExample1,
                 "This is a command line, only <port names> and the out_dir part should be localized",
                 "vcpkg export <port names> [--nuget] [--output-dir=out_dir]")
 DECLARE_MESSAGE(CmdExportOpt7Zip, (), "", "Exports to a 7zip (.7z) file")
+DECLARE_MESSAGE(CmdExportOptDereferenceSymlinks,
+                (),
+                "",
+                "Copies symlinks as regular files and directories in the exported results")
 DECLARE_MESSAGE(CmdExportOptDryRun, (), "", "Does not actually export")
 DECLARE_MESSAGE(CmdExportOptInstalled, (), "", "Exports all installed packages")
 DECLARE_MESSAGE(CmdExportOptNuget, (), "", "Exports a NuGet package")
@@ -1087,7 +1090,7 @@ DECLARE_MESSAGE(
     "2. If you are using Windows, vcpkg will automatically use your Windows IE Proxy Settings set by your "
     "proxy software. See: https://github.com/microsoft/vcpkg-tool/pull/77\n"
     "The value set by your proxy might be wrong, or have same `https://` prefix issue.\n"
-    "3. Your proxy's remote server is our of service.\n"
+    "3. Your proxy's remote server is out of service.\n"
     "If you believe this is not a temporary download server failure and vcpkg needs to be changed to download this "
     "file from a different location, please submit an issue to https://github.com/Microsoft/vcpkg/issues")
 DECLARE_MESSAGE(DownloadingPortableToolVersionX,
@@ -2706,6 +2709,10 @@ DECLARE_MESSAGE(RestoredPackagesFromAWS,
                 (msg::count, msg::elapsed),
                 "",
                 "Restored {count} package(s) from AWS in {elapsed}. Use --debug to see more details.")
+DECLARE_MESSAGE(RestoredPackagesFromAzureStorage,
+                (msg::count, msg::elapsed),
+                "",
+                "Restored {count} package(s) from Azure Storage in {elapsed}. Use --debug to see more details.")
 DECLARE_MESSAGE(RestoredPackagesFromAZUPKG,
                 (msg::count, msg::elapsed),
                 "",

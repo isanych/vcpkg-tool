@@ -36,7 +36,7 @@
 #include <vcpkg/vcpkglib.h>
 #include <vcpkg/vcpkgpaths.h>
 
-#include <numeric>
+#include <iterator>
 
 using namespace vcpkg;
 
@@ -1023,6 +1023,14 @@ namespace vcpkg
         {
             return m_paths.scripts / "toolchains/windows.cmake";
         }
+        else if (cmake_system_name == "tvOS")
+        {
+            return m_paths.scripts / "toolchains/ios.cmake";
+        }
+        else if (cmake_system_name == "watchOS")
+        {
+            return m_paths.scripts / "toolchains/ios.cmake";
+        }
         else if (cmake_system_name == "visionOS")
         {
             return m_paths.scripts / "toolchains/ios.cmake";
@@ -1055,14 +1063,29 @@ namespace vcpkg
 
         const auto now = CTime::now_string();
         const auto& abi = action.abi_info.value_or_exit(VCPKG_LINE_INFO);
+        const auto& package_dir = action.package_dir.value_or_exit(VCPKG_LINE_INFO);
 
-        const auto json_path =
-            action.package_dir.value_or_exit(VCPKG_LINE_INFO) / FileShare / action.spec.name() / FileVcpkgSpdxJson;
-        fs.write_contents_and_dirs(
-            json_path,
-            create_spdx_sbom(
-                action, abi.relative_port_files, abi.relative_port_hashes, now, doc_ns, std::move(heuristic_resources)),
-            VCPKG_LINE_INFO);
+        const auto json_path = package_dir / FileShare / action.spec.name() / FileVcpkgSpdxJson;
+        // Gather all the files in the package directory
+        // Note: For packages with many files, this sequential hashing may be slow
+        const auto relative_package_files =
+            fs.get_regular_files_recursive_lexically_proximate(package_dir, VCPKG_LINE_INFO);
+        std::vector<std::string> package_hashes;
+        for (const auto& file : relative_package_files)
+        {
+            auto hash = Hash::get_file_hash(fs, package_dir / file, Hash::Algorithm::Sha256);
+            package_hashes.push_back(hash.value_or_exit(VCPKG_LINE_INFO));
+        }
+        fs.write_contents_and_dirs(json_path,
+                                   create_spdx_sbom(action,
+                                                    abi.relative_port_files,
+                                                    abi.relative_port_hashes,
+                                                    relative_package_files,
+                                                    package_hashes,
+                                                    now,
+                                                    doc_ns,
+                                                    std::move(heuristic_resources)),
+                                   VCPKG_LINE_INFO);
     }
 
     static ExtendedBuildResult do_build_package(const VcpkgCmdArguments& args,
@@ -1456,6 +1479,7 @@ namespace vcpkg
 
         abi_tag_entries.emplace_back(AbiTagPortsDotCMake, paths.get_ports_cmake_hash().to_string());
         abi_tag_entries.emplace_back(AbiTagPostBuildChecks, "2");
+        abi_tag_entries.emplace_back(AbiTagSbomInfo, "1");
         InternalFeatureSet sorted_feature_list = action.feature_list;
         // Check that no "default" feature is present. Default features must be resolved before attempting to calculate
         // a package ABI, so the "default" should not have made it here.
@@ -1830,6 +1854,8 @@ namespace vcpkg
                     std::back_inserter(issue_body), "- Compiler: {} {}\n", compiler_info->id, compiler_info->version);
             }
         }
+        fmt::format_to(
+            std::back_inserter(issue_body), "- CMake Version: {}\n", paths.get_tool_version(Tools::CMAKE, null_sink));
 
         fmt::format_to(std::back_inserter(issue_body), "-{}\n", paths.get_toolver_diagnostics());
         fmt::format_to(std::back_inserter(issue_body),
@@ -1875,10 +1901,9 @@ namespace vcpkg
 
     static std::string make_gh_issue_open_url(StringView spec_name, StringView triplet, StringView body)
     {
-        return Strings::concat("https://github.com/microsoft/vcpkg/issues/new?title=[",
-                               spec_name,
-                               "]+Build+error+on+",
-                               triplet,
+        auto title = fmt::format("[{}] build error on {}", spec_name, triplet);
+        return Strings::concat("https://github.com/microsoft/vcpkg/issues/new?title=",
+                               Strings::percent_encode(title),
                                "&body=",
                                Strings::percent_encode(body));
     }
@@ -2012,9 +2037,9 @@ namespace vcpkg
         {
             result
                 .append_raw("https://github.com/microsoft/vcpkg/issues/"
-                            "new?template=report-package-build-failure.md&title=[")
+                            "new?template=report-package-build-failure.md&title=%5B")
                 .append_raw(spec_name)
-                .append_raw("]+Build+error+on+")
+                .append_raw("%5D+Build+error+on+")
                 .append_raw(triplet_name)
                 .append_raw("\n");
             result.append(msgBuildTroubleshootingMessage3, msg::package_name = spec_name).append_raw('\n');
