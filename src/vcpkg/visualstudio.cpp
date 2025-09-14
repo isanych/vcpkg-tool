@@ -24,6 +24,7 @@ namespace vcpkg::VisualStudio
     static constexpr StringLiteral V_141 = "v141";
     static constexpr StringLiteral V_142 = "v142";
     static constexpr StringLiteral V_143 = "v143";
+    static constexpr StringLiteral V_145 = "v145";
 
     struct VisualStudioInstance
     {
@@ -273,6 +274,10 @@ namespace vcpkg::VisualStudio
                     else if (toolset_version_prefix[3] == '3' || toolset_version_prefix[3] == '4')
                     {
                         toolset_version = V_143;
+                    }
+                    else if (toolset_version_prefix[3] == '5')
+                    {
+                        toolset_version = V_145;
                     }
                     else
                     {
