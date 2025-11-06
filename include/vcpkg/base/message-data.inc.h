@@ -295,11 +295,6 @@ DECLARE_MESSAGE(AttemptingToSetBuiltInBaseline,
                 "",
                 "attempting to set builtin-baseline in vcpkg.json while overriding the default-registry in "
                 "vcpkg-configuration.json.\nthe default-registry from vcpkg-configuration.json will be used.")
-DECLARE_MESSAGE(AuthenticationMayRequireManualAction,
-                (msg::vendor),
-                "",
-                "One or more {vendor} credential providers requested manual action. Add the binary source "
-                "'interactive' to allow interactivity.")
 DECLARE_MESSAGE(AutomaticLinkingForMSBuildProjects,
                 (),
                 "",
@@ -464,8 +459,6 @@ DECLARE_MESSAGE(
     "different architecture. This usually means toolchain information is incorrectly conveyed to the binaries' "
     "build system. To suppress this message, add set(VCPKG_POLICY_SKIP_ARCHITECTURE_CHECK enabled)")
 DECLARE_MESSAGE(ChecksFailedCheck, (), "", "vcpkg has crashed; no additional details are available.")
-DECLARE_MESSAGE(ChecksUnreachableCode, (), "", "unreachable code was reached")
-DECLARE_MESSAGE(ChecksUpdateVcpkg, (), "", "updating vcpkg by rerunning bootstrap-vcpkg may resolve this failure.")
 DECLARE_MESSAGE(CiBaselineAllowUnexpectedPassingRequiresBaseline,
                 (),
                 "",
@@ -502,6 +495,14 @@ DECLARE_MESSAGE(CiBaselineUnexpectedPass,
                 (msg::spec, msg::path),
                 "",
                 "PASSING, REMOVE FROM FAIL LIST: {spec} ({path}).")
+DECLARE_MESSAGE(CiBaselineUnexpectedPassCascade,
+                (msg::spec, msg::triplet),
+                "",
+                "REGRESSION: {spec} is marked as pass but one dependency is not supported for {triplet}.")
+DECLARE_MESSAGE(CiBaselineUnexpectedPassUnsupported,
+                (msg::spec, msg::triplet),
+                "",
+                "REGRESSION: {spec} is marked as pass but not supported for {triplet}.")
 DECLARE_MESSAGE(CISettingsOptCIBase,
                 (),
                 "",
@@ -684,12 +685,12 @@ DECLARE_MESSAGE(CmdExportOptDereferenceSymlinks,
                 "Copies symlinks as regular files and directories in the exported results")
 DECLARE_MESSAGE(CmdExportOptDryRun, (), "", "Does not actually export")
 DECLARE_MESSAGE(CmdExportOptInstalled, (), "", "Exports all installed packages")
-DECLARE_MESSAGE(CmdExportOptNuget, (), "", "Exports a NuGet package")
+DECLARE_MESSAGE(CmdExportOptNuGet, (), "", "Exports a NuGet package")
 DECLARE_MESSAGE(CmdExportOptRaw, (), "", "Exports to an uncompressed directory")
 DECLARE_MESSAGE(CmdExportOptZip, (), "", "Exports to a zip file")
-DECLARE_MESSAGE(CmdExportSettingNugetDesc, (), "", "Description for the exported NuGet package")
-DECLARE_MESSAGE(CmdExportSettingNugetID, (), "", "Id for the exported NuGet package (overrides --output)")
-DECLARE_MESSAGE(CmdExportSettingNugetVersion, (), "", "The version for the exported NuGet package")
+DECLARE_MESSAGE(CmdExportSettingNuGetDesc, (), "", "Description for the exported NuGet package")
+DECLARE_MESSAGE(CmdExportSettingNuGetID, (), "", "Id for the exported NuGet package (overrides --output)")
+DECLARE_MESSAGE(CmdExportSettingNuGetVersion, (), "", "The version for the exported NuGet package")
 DECLARE_MESSAGE(CmdExportSettingOutput, (), "", "The output name (used to construct filename)")
 DECLARE_MESSAGE(CmdExportSettingOutputDir, (), "", "The output directory for produced artifacts")
 DECLARE_MESSAGE(CmdExportSynopsis, (), "", "Creates a standalone deployment of installed ports")
@@ -950,10 +951,10 @@ DECLARE_MESSAGE(CorruptedDatabase,
                 "the contents of the 'installed' directory in an unexpected way. You may be able to fix this by "
                 "deleting the 'installed' directory and reinstalling what you want to use. If this problem happens "
                 "consistently, please file a bug at https://github.com/microsoft/vcpkg .")
-DECLARE_MESSAGE(CouldNotDeduceNugetIdAndVersion,
+DECLARE_MESSAGE(CouldNotDeduceNuGetIdAndVersion,
                 (msg::path),
                 "",
-                "Could not deduce nuget id and version from filename: {path}")
+                "Could not deduce NuGet id and version from filename: {path}")
 DECLARE_MESSAGE(CouldNotFindBaselineInCommit,
                 (msg::url, msg::commit_sha, msg::package_name),
                 "",
@@ -966,7 +967,7 @@ DECLARE_MESSAGE(CouldNotFindVersionDatabaseFile, (msg::path), "", "Couldn't find
 DECLARE_MESSAGE(CreatedNuGetPackage, (msg::path), "", "Created nupkg: {path}")
 DECLARE_MESSAGE(CreateFailureLogsDir, (msg::path), "", "Creating failure logs output directory {path}.")
 DECLARE_MESSAGE(Creating7ZipArchive, (), "", "Creating 7zip archive...")
-DECLARE_MESSAGE(CreatingNugetPackage, (), "", "Creating NuGet package...")
+DECLARE_MESSAGE(CreatingNuGetPackage, (), "", "Creating NuGet package...")
 DECLARE_MESSAGE(CreatingZipArchive, (), "", "Creating zip archive...")
 DECLARE_MESSAGE(CreationFailed, (msg::path), "", "Creating {path} failed.")
 DECLARE_MESSAGE(CurlFailedGeneric,
@@ -1273,6 +1274,7 @@ DECLARE_MESSAGE(ExportedZipArchive, (msg::path), "", "Zip archive exported at: {
 DECLARE_MESSAGE(ExportingAlreadyBuiltPackages, (), "", "The following packages are already built and will be exported:")
 DECLARE_MESSAGE(ExportingPackage, (msg::package_name), "", "Exporting {package_name}...")
 DECLARE_MESSAGE(ExtendedDocumentationAtUrl, (msg::url), "", "Extended documentation available at '{url}'.")
+DECLARE_MESSAGE(ExtractedInto, (msg::path), "", "extracted into {path}")
 DECLARE_MESSAGE(ExtractHelp, (), "", "Extracts an archive.")
 DECLARE_MESSAGE(ExtractingTool, (msg::tool_name), "", "Extracting {tool_name}...")
 DECLARE_MESSAGE(FailedPostBuildChecks,
@@ -1804,7 +1806,7 @@ DECLARE_MESSAGE(InstallingPackage,
                 "Installing {action_index}/{count} {spec}...")
 DECLARE_MESSAGE(InstallPackageInstruction,
                 (msg::value, msg::path),
-                "'{value}' is the nuget id.",
+                "'{value}' is the NuGet id.",
                 "With a project open, go to Tools->NuGet Package Manager->Package Manager Console and "
                 "paste:\n Install-Package \"{value}\" -Source \"{path}\"")
 DECLARE_MESSAGE(InstallRootDir, (), "", "Installed directory (experimental)")
@@ -2256,15 +2258,20 @@ DECLARE_MESSAGE(NonZeroRemainingArgs,
 DECLARE_MESSAGE(NoOutdatedPackages, (), "", "There are no outdated packages.")
 DECLARE_MESSAGE(NoRegistryForPort, (msg::package_name), "", "no registry configured for port {package_name}")
 DECLARE_MESSAGE(NoUrlsAndNoHashSpecified, (), "", "No urls specified and no hash specified.")
-DECLARE_MESSAGE(NugetOutputNotCapturedBecauseInteractiveSpecified,
+DECLARE_MESSAGE(NuGetAuthenticationMayRequireManualAction,
+                (),
+                "",
+                "One or more NuGet credential providers requested manual action. Add the binary source 'interactive' "
+                "to allow interactivity.")
+DECLARE_MESSAGE(NuGetOutputNotCapturedBecauseInteractiveSpecified,
                 (),
                 "",
                 "NuGet command failed and output was not captured because --interactive was specified")
-DECLARE_MESSAGE(NugetPackageFileSucceededButCreationFailed,
+DECLARE_MESSAGE(NuGetPackageFileSucceededButCreationFailed,
                 (msg::path),
                 "",
                 "NuGet package creation succeeded, but no .nupkg was produced. Expected: \"{path}\"")
-DECLARE_MESSAGE(NugetTimeoutExpectsSinglePositiveInteger,
+DECLARE_MESSAGE(NuGetTimeoutExpectsSinglePositiveInteger,
                 (),
                 "",
                 "unexpected arguments: binary config 'nugettimeout' expects a single positive integer argument")
@@ -2332,7 +2339,6 @@ DECLARE_MESSAGE(PackagesToRebuildSuggestRecurse,
                 "If you are sure you want to rebuild the above packages, run the command with the --recurse option.")
 DECLARE_MESSAGE(PackagesToRemove, (), "", "The following packages will be removed:")
 DECLARE_MESSAGE(PackagesUpToDate, (), "", "No packages need updating.")
-DECLARE_MESSAGE(PackingVendorFailed, (msg::vendor), "", "Packing {vendor} failed. Use --debug for more information.")
 DECLARE_MESSAGE(PairedSurrogatesAreInvalid,
                 (),
                 "",
@@ -2677,10 +2683,6 @@ DECLARE_MESSAGE(ProvideExportType,
                 (),
                 "",
                 "At least one of the following options are required: --raw --nuget --zip --7zip.")
-DECLARE_MESSAGE(PushingVendorFailed,
-                (msg::vendor, msg::path),
-                "",
-                "Pushing {vendor} to \"{path}\" failed. Use --debug for more information.")
 DECLARE_MESSAGE(RegistryCreated, (msg::path), "", "Successfully created registry at {path}")
 DECLARE_MESSAGE(RegeneratesArtifactRegistry, (), "", "Regenerates an artifact registry")
 DECLARE_MESSAGE(RegistryValueWrongType, (msg::path), "", "The registry value {path} was an unexpected type.")
@@ -2854,7 +2856,6 @@ DECLARE_MESSAGE(TwoFeatureFlagsSpecified,
                 (msg::value),
                 "'{value}' is a feature flag.",
                 "Both '{value}' and -'{value}' were specified as feature flags.")
-DECLARE_MESSAGE(UnableToClearPath, (msg::path), "", "unable to delete {path}")
 DECLARE_MESSAGE(UnableToReadAppDatas, (), "", "both %LOCALAPPDATA% and %APPDATA% were unreadable")
 DECLARE_MESSAGE(UnableToReadEnvironmentVariable, (msg::env_var), "", "unable to read {env_var}")
 DECLARE_MESSAGE(UndeterminedToolChainForTriplet,
@@ -2978,6 +2979,7 @@ DECLARE_MESSAGE(
     "",
     "{feature_spec} was unexpectedly a cascading failure because the following dependencies are unavailable:")
 DECLARE_MESSAGE(UnexpectedStateCascadePortNote, (), "", "consider changing this to =cascade instead")
+DECLARE_MESSAGE(UnexpectedStateCascadeSuggestLine, (), "", "consider adding the following line:")
 DECLARE_MESSAGE(UnexpectedSwitch,
                 (msg::option),
                 "Switch is a command line switch like --switch",
@@ -3352,11 +3354,13 @@ DECLARE_MESSAGE(WaitUntilPackagesUploaded,
                 "",
                 "Waiting for {count} remaining binary cache submissions...")
 DECLARE_MESSAGE(WarningsTreatedAsErrors, (), "", "previous warnings being interpreted as errors")
+DECLARE_MESSAGE(WhileClearingThis, (), "", "while clearing this directory")
 DECLARE_MESSAGE(WhileCheckingOutBaseline, (msg::commit_sha), "", "while checking out baseline {commit_sha}")
 DECLARE_MESSAGE(WhileCheckingOutPortTreeIsh,
                 (msg::package_name, msg::git_tree_sha),
                 "",
                 "while checking out port {package_name} with git tree {git_tree_sha}")
+DECLARE_MESSAGE(WhileExtractingThisArchive, (), "", "while extracting this archive")
 DECLARE_MESSAGE(WhileGettingLocalTreeIshObjectsForPorts, (), "", "while getting local treeish objects for ports")
 DECLARE_MESSAGE(WhileLookingForSpec, (msg::spec), "", "while looking for {spec}:")
 DECLARE_MESSAGE(WhileLoadingBaselineVersionForPort,
@@ -3368,6 +3372,8 @@ DECLARE_MESSAGE(WhileParsingVersionsForPort,
                 (msg::package_name, msg::path),
                 "",
                 "while parsing versions for {package_name} from {path}")
+DECLARE_MESSAGE(WhilePackingNuGetPackage, (), "", "while packing NuGet package")
+DECLARE_MESSAGE(WhilePushingNuGetPackage, (), "", "while pushing NuGet package")
 DECLARE_MESSAGE(WhileRunningAssetCacheScriptCommandLine, (), "", "while running asset cache script command line")
 DECLARE_MESSAGE(WhileValidatingVersion, (msg::version), "", "while validating version: {version}")
 DECLARE_MESSAGE(WindowsEnvMustAlwaysBePresent, (msg::env_var), "", "Expected {env_var} to be always set on Windows.")
