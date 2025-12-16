@@ -289,7 +289,7 @@ namespace vcpkg
         }
 
         BinaryCache binary_cache(fs);
-        if (!binary_cache.install_providers(args, paths, out_sink))
+        if (!binary_cache.install_providers(console_diagnostic_context, args, paths))
         {
             Checks::exit_fail(VCPKG_LINE_INFO);
         }
@@ -602,7 +602,7 @@ namespace vcpkg
         });
 
         return base_env.cmd_cache.get_lazy(build_env_cmd, [&]() {
-            const Path& powershell_exe_path = paths.get_tool_exe("powershell-core", out_sink);
+            const Path& powershell_exe_path = paths.get_tool_path_required("powershell-core");
             auto clean_env = get_modified_clean_environment(base_env.env_map, powershell_exe_path.parent_path());
             if (build_env_cmd.empty())
                 return clean_env;
@@ -744,7 +744,7 @@ namespace vcpkg
         BinaryParagraph bpgh(*scfl.source_control_file->core_paragraph,
                              action.default_features.value_or_exit(VCPKG_LINE_INFO),
                              action.spec.triplet(),
-                             action.public_abi(),
+                             action.package_abi_or_empty(),
                              fspecs_to_pspecs(find_itr->second));
         if (const auto p_ver = build_info.detected_head_version.get())
         {
@@ -791,7 +791,7 @@ namespace vcpkg
         out_vars.emplace_back(CMakeVariableConcurrency, std::to_string(get_concurrency()));
         out_vars.emplace_back(CMakeVariablePlatformToolset, toolset.version);
         // Make sure GIT could be found
-        out_vars.emplace_back(CMakeVariableGit, paths.get_tool_exe(Tools::GIT, out_sink));
+        out_vars.emplace_back(CMakeVariableGit, paths.get_tool_path_required(Tools::GIT));
     }
 
     static CompilerInfo load_compiler_info(const VcpkgPaths& paths,
@@ -1334,14 +1334,6 @@ namespace vcpkg
                                                 const PreBuildInfo& pre_build_info,
                                                 std::vector<AbiEntry>& abi_tag_entries)
     {
-        if (pre_build_info.public_abi_override)
-        {
-            abi_tag_entries.emplace_back(
-                AbiTagPublicAbiOverride,
-                Hash::get_string_hash(pre_build_info.public_abi_override.value_or_exit(VCPKG_LINE_INFO),
-                                      Hash::Algorithm::Sha256));
-        }
-
         for (const auto& env_var : pre_build_info.passthrough_env_vars_tracked)
         {
             if (auto e = get_environment_variable(env_var))
@@ -1508,11 +1500,11 @@ namespace vcpkg
                 Hash::get_file_hash(fs, file, Hash::Algorithm::Sha256).value_or_exit(VCPKG_LINE_INFO));
         }
 
-        abi_tag_entries.emplace_back(AbiTagCMake, paths.get_tool_version(Tools::CMAKE, out_sink));
+        abi_tag_entries.emplace_back(AbiTagCMake, paths.get_tool_version_required(Tools::CMAKE));
 
         // This #ifdef is mirrored in tools.cpp's PowershellProvider
 #if defined(_WIN32)
-        abi_tag_entries.emplace_back(AbiTagPowershell, paths.get_tool_version("powershell-core", out_sink));
+        abi_tag_entries.emplace_back(AbiTagPowershell, paths.get_tool_version_required("powershell-core"));
 #endif
 
         abi_tag_entries.emplace_back(AbiTagPortsDotCMake, paths.get_ports_cmake_hash().to_string());
@@ -1595,12 +1587,14 @@ namespace vcpkg
             for (auto&& pspec : action.package_dependencies)
             {
                 if (pspec == action.spec) continue;
+                auto it2 = std::find_if(action_plan.install_actions.begin(), it, [&](const InstallPlanAction& ipa) {
+                    return ipa.spec == pspec;
+                });
 
-                auto pred = [&](const InstallPlanAction& ipa) { return ipa.spec == pspec; };
-                auto it2 = std::find_if(action_plan.install_actions.begin(), it, pred);
                 if (it2 == it)
                 {
-                    // Finally, look in current installed
+                    // If the action plan was built from an existing install tree, existing dependencies won't be in the
+                    // plan. Look for their ABI from the installed tree.
                     auto status_it = status_db.find(pspec);
                     if (status_it == status_db.end())
                     {
@@ -1609,11 +1603,15 @@ namespace vcpkg
                             fmt::format("Failed to find dependency abi for {} -> {}", action.spec, pspec));
                     }
 
+                    // Note that this may be empty string if the installed dependency was itself UseHeadVersion or
+                    // Editable
                     dependency_abis.emplace_back(pspec.name(), status_it->get()->package.abi);
                 }
                 else
                 {
-                    dependency_abis.emplace_back(pspec.name(), it2->public_abi());
+                    // Note that the ABI of the dependency may be empty if it depends on something with UseHeadVersion
+                    // or Editable
+                    dependency_abis.emplace_back(pspec.name(), it2->package_abi_or_empty());
                 }
             }
 
@@ -1909,7 +1907,7 @@ namespace vcpkg
             }
         }
         fmt::format_to(
-            std::back_inserter(issue_body), "- CMake Version: {}\n", paths.get_tool_version(Tools::CMAKE, null_sink));
+            std::back_inserter(issue_body), "- CMake Version: {}\n", paths.get_tool_version_required(Tools::CMAKE));
 
         fmt::format_to(std::back_inserter(issue_body), "-{}\n", paths.get_toolver_diagnostics());
         fmt::format_to(std::back_inserter(issue_body),
@@ -2237,7 +2235,6 @@ namespace vcpkg
             Util::Vectors::append(passthrough_env_vars, Strings::split(*value, ';'));
         }
 
-        Util::assign_if_set_and_nonempty(public_abi_override, cmakevars, CMakeVariablePublicAbiOverride);
         if (auto value = Util::value_if_set_and_nonempty(cmakevars, CMakeVariableHashAdditionalFiles))
         {
             hash_additional_files =

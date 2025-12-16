@@ -58,7 +58,7 @@ namespace
     {
         auto& fs = paths.get_filesystem();
         auto& builtin_ports = paths.builtin_ports_directory();
-        auto git_exe = paths.get_tool_exe(Tools::GIT, out_sink);
+        auto git_exe = paths.get_tool_path_required(Tools::GIT);
         auto ports_dir_prefix =
             git_prefix(console_diagnostic_context, git_exe, builtin_ports).value_or_quiet_exit(VCPKG_LINE_INFO);
         const auto locator = GitRepoLocator{GitRepoLocatorKind::CurrentDirectory, builtin_ports};
@@ -461,7 +461,7 @@ namespace vcpkg
         const auto test_features_separately = !Util::Sets::contains(options.switches, SwitchNoSeparated);
 
         BinaryCache binary_cache(fs);
-        if (!binary_cache.install_providers(args, paths, out_sink))
+        if (!binary_cache.install_providers(console_diagnostic_context, args, paths))
         {
             Checks::exit_fail(VCPKG_LINE_INFO);
         }
@@ -681,15 +681,15 @@ namespace vcpkg
 
         msg::println(msgComputeInstallPlans, msg::count = specs_to_test.size());
 
+        StatusParagraphs empty_status_db;
         std::vector<FullPackageSpec> specs;
-        std::vector<Path> port_locations;
         std::vector<const InstallPlanAction*> actions_to_check;
         for (auto&& test_spec : specs_to_test)
         {
             test_spec.plan = create_feature_install_plan(provider,
                                                          var_provider,
                                                          Span<FullPackageSpec>(&test_spec, 1),
-                                                         {},
+                                                         empty_status_db,
                                                          packages_dir_assigner,
                                                          install_plan_options);
             if (test_spec.plan.unsupported_features.empty())
@@ -697,25 +697,23 @@ namespace vcpkg
                 for (auto& actions : test_spec.plan.install_actions)
                 {
                     specs.emplace_back(actions.spec, actions.feature_list);
-                    port_locations.emplace_back(
-                        actions.source_control_file_and_location.value_or_exit(VCPKG_LINE_INFO).port_directory());
                 }
                 actions_to_check.push_back(&test_spec.plan.install_actions.back());
             }
         }
 
         msg::println(msgComputeAllAbis);
-        var_provider.load_tag_vars(specs, port_locations, host_triplet);
+        var_provider.load_tag_vars(specs, host_triplet);
         for (auto&& test_spec : specs_to_test)
         {
             if (test_spec.plan.unsupported_features.empty())
             {
-                compute_all_abis(paths, test_spec.plan, var_provider, status_db, port_dir_abi_info_cache);
+                compute_all_abis(paths, test_spec.plan, var_provider, empty_status_db, port_dir_abi_info_cache);
             }
         }
 
         msg::println(msgPrecheckBinaryCache);
-        binary_cache.precheck(actions_to_check);
+        binary_cache.precheck(console_diagnostic_context, fs, actions_to_check);
 
         Util::stable_sort(specs_to_test, [](const SpecToTest& left, const SpecToTest& right) noexcept {
             return left.plan.install_actions.size() < right.plan.install_actions.size();
@@ -807,8 +805,8 @@ namespace vcpkg
 
             {
                 const InstallPlanAction* action = &install_plan.install_actions.back();
-                if (binary_cache.precheck(View<const InstallPlanAction*>(&action, 1)).front() ==
-                    CacheAvailability::available)
+                if (binary_cache.precheck(console_diagnostic_context, fs, View<const InstallPlanAction*>(&action, 1))
+                        .front() == CacheAvailability::available)
                 {
                     msg::println(msgSkipTestingOfPortAlreadyInBinaryCache,
                                  msg::sha = action->package_abi_or_exit(VCPKG_LINE_INFO));
@@ -828,7 +826,7 @@ namespace vcpkg
             }
 
             install_clear_installed_packages(paths, install_plan.install_actions);
-            binary_cache.fetch(install_plan.install_actions);
+            binary_cache.fetch(console_diagnostic_context, fs, install_plan.install_actions);
             const auto summary = install_execute_plan(args,
                                                       paths,
                                                       host_triplet,

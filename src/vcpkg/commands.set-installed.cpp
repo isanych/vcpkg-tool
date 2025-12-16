@@ -173,7 +173,6 @@ namespace vcpkg
             {
                 // convert the 'to install' entry to an already installed entry
                 ipa.installed_package = status_db.get_installed_package_view(ipa.spec);
-                ipa.plan_type = InstallPlanType::ALREADY_INSTALLED;
                 action_plan.already_installed.push_back(std::move(ipa));
                 return true;
             }
@@ -262,13 +261,13 @@ namespace vcpkg
         BinaryCache binary_cache(fs);
         if (build_options.only_downloads == OnlyDownloads::No)
         {
-            if (!binary_cache.install_providers(args, paths, out_sink))
+            if (!binary_cache.install_providers(console_diagnostic_context, args, paths))
             {
                 Checks::exit_fail(VCPKG_LINE_INFO);
             }
         }
 
-        binary_cache.fetch(action_plan.install_actions);
+        binary_cache.fetch(console_diagnostic_context, fs, action_plan.install_actions);
         const auto summary = install_execute_plan(args,
                                                   paths,
                                                   host_triplet,
