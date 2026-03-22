@@ -55,8 +55,6 @@ namespace vcpkg
         VcpkgPaths& operator=(const VcpkgPaths&) = delete;
         ~VcpkgPaths();
 
-        Path package_dir(const PackageSpec& spec) const;
-        Path build_dir(const PackageSpec& spec) const;
         Path build_dir(StringView package_name) const;
 
         const TripletDatabase& get_triplet_db() const;
@@ -87,10 +85,8 @@ namespace vcpkg
     public:
         const Path& scripts;
         const Path& downloads;
-        const Path& tools;
         const Path builtin_registry_versions;
         ExpectedL<Path> versions_dot_git_dir() const;
-        const Path prefab;
         const Path buildsystems;
         const Path buildsystems_msbuild_targets;
         const Path buildsystems_msbuild_props;
@@ -133,7 +129,7 @@ namespace vcpkg
         ExpectedL<Unit> git_read_tree(const Path& destination, StringView tree, const Path& dot_git_dir) const;
         ExpectedL<Path> git_extract_tree_from_remote_registry(StringView tree) const;
 
-        Optional<const ManifestAndPath&> get_manifest() const;
+        const ManifestAndPath* get_manifest() const;
         bool manifest_mode_enabled() const;
         const ConfigurationAndSource& get_configuration() const;
         std::unique_ptr<RegistrySet> make_registry_set() const;

@@ -15,13 +15,13 @@
 #include <vcpkg/commands.install.h>
 #include <vcpkg/commands.set-installed.h>
 #include <vcpkg/dependencies.h>
+#include <vcpkg/installeddatabase.h>
 #include <vcpkg/packagespec.h>
 #include <vcpkg/paragraphs.h>
 #include <vcpkg/platform-expression.h>
 #include <vcpkg/portfileprovider.h>
 #include <vcpkg/registries.h>
 #include <vcpkg/vcpkgcmdarguments.h>
-#include <vcpkg/vcpkglib.h>
 #include <vcpkg/vcpkgpaths.h>
 #include <vcpkg/xunitwriter.h>
 
@@ -80,7 +80,9 @@ namespace
             return true;
         }
 
-        return supports_expression.evaluate(var_provider.get_dep_info_vars(spec).value_or_exit(VCPKG_LINE_INFO));
+        const auto* dep_vars = var_provider.get_dep_info_vars(spec);
+        Checks::check_exit(VCPKG_LINE_INFO, dep_vars != nullptr);
+        return supports_expression.evaluate(*dep_vars);
     }
 
     bool cascade_for_triplet(const std::vector<InstallPlanAction>& install_actions,
@@ -117,7 +119,7 @@ namespace
         StatusParagraphs empty_status_db;
         auto action_plan = create_feature_install_plan(
             provider, var_provider, applicable_specs, empty_status_db, packages_dir_assigner, serialize_options);
-        var_provider.load_tag_vars(action_plan, serialize_options.host_triplet);
+        var_provider.load_tag_vars(action_plan.install_actions, serialize_options.host_triplet);
 
         Checks::check_exit(VCPKG_LINE_INFO, action_plan.already_installed.empty());
         Checks::check_exit(VCPKG_LINE_INFO, action_plan.remove_actions.empty());
@@ -249,12 +251,10 @@ namespace
                 }
             }
 
-            if (Util::Sets::contains(to_keep, it->spec))
+            if (Util::Sets::contains(to_keep, it->spec) && it_known->second != BuildResult::Excluded &&
+                it_known->second != BuildResult::Unsupported)
             {
-                if (it_known->second != BuildResult::Excluded && it_known->second != BuildResult::Unsupported)
-                {
-                    to_keep.insert(it->package_dependencies.begin(), it->package_dependencies.end());
-                }
+                to_keep.insert(it->package_dependencies.begin(), it->package_dependencies.end());
             }
         }
 
@@ -504,9 +504,11 @@ namespace vcpkg
             }
         }
 
+        InstalledDatabaseLock installed_lock{
+            paths.get_filesystem(), paths.installed(), args.wait_for_lock, args.ignore_lock_failures};
         auto registry_set = paths.make_registry_set();
         PathsPortFileProvider provider(*registry_set, make_overlay_provider(fs, paths.overlay_ports));
-        auto var_provider_storage = CMakeVars::make_triplet_cmake_var_provider(paths);
+        auto var_provider_storage = CMakeVars::make_triplet_cmake_var_provider(paths, installed_lock);
         auto& var_provider = *var_provider_storage;
 
         const ElapsedTimer timer;
@@ -566,7 +568,7 @@ namespace vcpkg
         }
         else
         {
-            StatusParagraphs status_db = database_load_collapse(fs, paths.installed());
+            StatusParagraphs status_db = database_sync(fs, paths.installed(), installed_lock);
             auto already_installed = adjust_action_plan_to_status_db(action_plan, status_db);
             Util::erase_if(already_installed,
                            [&](const PackageSpec& spec) { return Util::Sets::contains(pre_build_status.known, spec); });
@@ -583,23 +585,25 @@ namespace vcpkg
             install_preclear_plan_packages(paths, action_plan);
             binary_cache.fetch(console_diagnostic_context, fs, action_plan.install_actions);
 
-            auto summary = install_execute_plan(
-                args, paths, host_triplet, build_options, action_plan, status_db, binary_cache, *build_logs_recorder);
+            auto summary = install_execute_plan(args,
+                                                paths,
+                                                host_triplet,
+                                                build_options,
+                                                installed_lock,
+                                                action_plan,
+                                                status_db,
+                                                binary_cache,
+                                                *build_logs_recorder);
             msg::println(msgTotalInstallTime, msg::elapsed = summary.elapsed);
 
-            for (auto&& result : summary.results)
+            for (auto&& result : summary.install_results)
             {
-                if (const auto* ipa = result.get_maybe_install_plan_action())
-                {
-                    // note that we assign over the 'known' values from above
-                    auto ci_result = CiResult{result.build_result.value_or_exit(VCPKG_LINE_INFO).code,
-                                              CiBuiltResult{ipa->package_abi_or_exit(VCPKG_LINE_INFO),
-                                                            ipa->feature_list,
-                                                            result.start_time,
-                                                            result.timing}};
-                    ci_plan_results.insert_or_assign(result.get_spec(), ci_result);
-                    ci_full_results.insert_or_assign(result.get_spec(), std::move(ci_result));
-                }
+                // note that we assign over the 'known' values from above
+                auto ci_result = CiResult{
+                    result.build_result.code,
+                    CiBuiltResult{result.package_abi(), result.feature_list(), result.start_time, result.timing}};
+                ci_plan_results.insert_or_assign(result.build_result.spec, ci_result);
+                ci_full_results.insert_or_assign(result.build_result.spec, std::move(ci_result));
             }
         }
 

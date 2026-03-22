@@ -10,12 +10,12 @@
 #include <vcpkg/commands.install.h>
 #include <vcpkg/dependencies.h>
 #include <vcpkg/input.h>
+#include <vcpkg/installeddatabase.h>
 #include <vcpkg/installedpaths.h>
 #include <vcpkg/portfileprovider.h>
 #include <vcpkg/registries.h>
 #include <vcpkg/tools.h>
 #include <vcpkg/vcpkgcmdarguments.h>
-#include <vcpkg/vcpkglib.h>
 #include <vcpkg/vcpkgpaths.h>
 
 using namespace vcpkg;
@@ -111,7 +111,7 @@ namespace
 
         for (const ExportPlanAction& action : plan)
         {
-            if (action.core_paragraph().has_value())
+            if (action.core_paragraph())
             {
                 already_built.push_back(&action);
             }
@@ -304,15 +304,14 @@ namespace
         ret.maybe_output = Util::lookup_value_copy(options.settings, SwitchOutput);
         ret.all_installed = Util::Sets::contains(options.switches, SwitchXAllInstalled);
         ret.dereference_symlinks = Util::Sets::contains(options.switches, SwitchDereferenceSymlinks);
+        const auto* output_dir_opt = Util::lookup_value(options.settings, SwitchOutputDir);
 
         if (paths.manifest_mode_enabled())
         {
-            auto output_dir_opt = Util::lookup_value(options.settings, SwitchOutputDir);
-
             // --output-dir is required in manifest mode
-            if (auto d = output_dir_opt.get())
+            if (output_dir_opt)
             {
-                ret.output_dir = paths.original_cwd / *d;
+                ret.output_dir = paths.original_cwd / *output_dir_opt;
             }
             else
             {
@@ -331,10 +330,10 @@ namespace
             }
         }
 
-        ret.output_dir = ret.output_dir.empty() ? Util::lookup_value(options.settings, SwitchOutputDir)
-                                                      .map([&](const Path& p) { return paths.original_cwd / p; })
-                                                      .value_or(paths.root)
-                                                : ret.output_dir;
+        if (ret.output_dir.empty())
+        {
+            ret.output_dir = output_dir_opt ? paths.original_cwd / *output_dir_opt : paths.root;
+        }
 
         if (ret.all_installed)
         {
@@ -418,20 +417,21 @@ namespace
             const InstalledPaths export_paths(raw_exported_dir_path / "installed");
             for (const ExportPlanAction& action : export_plan)
             {
-                const BinaryParagraph& binary_paragraph = action.core_paragraph().value_or_exit(VCPKG_LINE_INFO);
+                const BinaryParagraph* binary_paragraph = action.core_paragraph();
+                Checks::check_exit(VCPKG_LINE_INFO, binary_paragraph != nullptr);
                 msg::println(msgExportingPackage, msg::package_name = action.spec);
 
                 const auto& triplet_canonical_name = action.spec.triplet().canonical_name();
 
                 auto lines =
-                    fs.read_lines(paths.installed().listfile_path(binary_paragraph)).value_or_exit(VCPKG_LINE_INFO);
+                    fs.read_lines(paths.installed().listfile_path(*binary_paragraph)).value_or_exit(VCPKG_LINE_INFO);
                 auto proximate_files = convert_list_to_proximate_files(std::move(lines), triplet_canonical_name);
                 install_files_and_write_listfile(fs,
                                                  paths.installed().triplet_dir(action.spec.triplet()),
                                                  proximate_files,
                                                  export_paths.root(),
                                                  triplet_canonical_name,
-                                                 export_paths.listfile_path(binary_paragraph),
+                                                 export_paths.listfile_path(*binary_paragraph),
                                                  opts.dereference_symlinks ? SymlinkHydrate::CopyData
                                                                            : SymlinkHydrate::CopySymlinks);
             }
@@ -539,7 +539,9 @@ namespace vcpkg
                                  Triplet host_triplet)
     {
         (void)host_triplet;
-        const StatusParagraphs status_db = database_load(paths.get_filesystem(), paths.installed());
+        InstalledDatabaseLock installed_lock{
+            paths.get_filesystem(), paths.installed(), args.wait_for_lock, args.ignore_lock_failures};
+        const StatusParagraphs status_db = database_load(paths.get_filesystem(), paths.installed(), installed_lock);
         const auto opts = handle_export_command_arguments(paths, args, default_triplet, status_db);
 
         // Load ports from ports dirs

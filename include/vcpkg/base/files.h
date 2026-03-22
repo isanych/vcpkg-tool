@@ -54,6 +54,17 @@ namespace vcpkg
         }
     };
 
+    constexpr char path_separator_char =
+#if defined(_WIN32)
+        ';'
+#else
+        ':'
+#endif
+        ;
+
+    inline constexpr char path_separator_buf[] = {path_separator_char, '\0'};
+    inline constexpr StringLiteral path_separator{path_separator_buf};
+
     bool is_symlink(FileType s);
     bool is_regular_file(FileType s);
     bool is_directory(FileType s);
@@ -103,6 +114,8 @@ namespace vcpkg
         // reads any remaining chunks of the file; used to implement read_to_end
         void read_to_end_suffix(
             std::string& output, std::error_code& ec, char* buffer, size_t buffer_size, size_t last_read);
+        uint64_t size(LineInfo li) const;
+        uint64_t size(std::error_code& ec) const;
     };
 
     struct WriteFilePointer : FilePointer
@@ -334,6 +347,8 @@ namespace vcpkg
 
         virtual bool last_write_time(DiagnosticContext& context, const Path& target, int64_t new_time) const = 0;
 
+        virtual bool set_executable(DiagnosticContext& context, const Path& target) const = 0;
+
         using ReadOnlyFilesystem::current_path;
         virtual void current_path(const Path& new_current_path, std::error_code&) const = 0;
         void current_path(const Path& new_current_path, LineInfo li) const;
@@ -349,8 +364,8 @@ namespace vcpkg
                                                                              const Path& lockfile) const = 0;
 
         // waits, at most, 1.5 seconds, for the file lock
-        virtual Optional<std::unique_ptr<IExclusiveFileLock>> try_take_exclusive_file_lock(
-            DiagnosticContext& context, const Path& lockfile) const = 0;
+        virtual std::unique_ptr<IExclusiveFileLock> try_take_exclusive_file_lock(DiagnosticContext& context,
+                                                                                 const Path& lockfile) const = 0;
 
         virtual WriteFilePointer open_for_write(const Path& file_path, Append append, std::error_code& ec) const = 0;
         WriteFilePointer open_for_write(const Path& file_path, Append append, LineInfo li) const;

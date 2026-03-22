@@ -8,6 +8,7 @@
 #include <vcpkg/commands.depend-info.h>
 #include <vcpkg/dependencies.h>
 #include <vcpkg/input.h>
+#include <vcpkg/installeddatabase.h>
 #include <vcpkg/packagespec.h>
 #include <vcpkg/portfileprovider.h>
 #include <vcpkg/registries.h>
@@ -110,7 +111,7 @@ namespace
         };
     }
 
-    std::vector<PackageDependInfo> extract_depend_info(const std::vector<const InstallPlanAction*>& install_actions,
+    std::vector<PackageDependInfo> extract_depend_info(const std::vector<InstallPlanAction>& install_actions,
                                                        const Triplet& default_triplet,
                                                        const Triplet& host_triplet,
                                                        const int max_depth)
@@ -126,10 +127,8 @@ namespace
         out.reserve(install_actions.size());
 
         std::map<std::string, PackageDependInfo&> package_dependencies;
-        for (const InstallPlanAction* pia : install_actions)
+        for (const InstallPlanAction& install_action : install_actions)
         {
-            const InstallPlanAction& install_action = *pia;
-
             const std::vector<std::string> dependencies =
                 Util::fmap(install_action.package_dependencies,
                            [&decorated_name](const PackageSpec& spec) { return decorated_name(spec); });
@@ -410,7 +409,8 @@ namespace vcpkg
         auto& fs = paths.get_filesystem();
         auto registry_set = paths.make_registry_set();
         PathsPortFileProvider provider(*registry_set, make_overlay_provider(fs, paths.overlay_ports));
-        auto var_provider_storage = CMakeVars::make_triplet_cmake_var_provider(paths);
+        InstalledDatabaseLock installed_lock{fs, paths.installed(), args.wait_for_lock, args.ignore_lock_failures};
+        auto var_provider_storage = CMakeVars::make_triplet_cmake_var_provider(paths, installed_lock);
         auto& var_provider = *var_provider_storage;
 
         // By passing an empty status_db, we should get a plan containing all dependencies.
@@ -426,20 +426,13 @@ namespace vcpkg
             {nullptr, host_triplet, UnsupportedPortAction::Warn, UseHeadVersion::No, Editable::No});
         action_plan.print_unsupported_warnings();
 
-        if (!action_plan.remove_actions.empty())
+        if (!action_plan.already_installed.empty() || !action_plan.remove_actions.empty())
         {
             Checks::unreachable(VCPKG_LINE_INFO, "Only install actions should exist in the plan");
         }
 
-        std::vector<const InstallPlanAction*> install_actions =
-            Util::fmap(action_plan.already_installed, [&](const auto& action) { return &action; });
-        for (auto&& action : action_plan.install_actions)
-        {
-            install_actions.push_back(&action);
-        }
-
         std::vector<PackageDependInfo> depend_info =
-            extract_depend_info(install_actions, default_triplet, host_triplet, strategy.max_depth);
+            extract_depend_info(action_plan.install_actions, default_triplet, host_triplet, strategy.max_depth);
 
         if (strategy.format == DependInfoFormat::Dot)
         {
