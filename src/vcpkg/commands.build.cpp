@@ -176,7 +176,7 @@ namespace vcpkg
                                    const VcpkgPaths& paths,
                                    Triplet host_triplet,
                                    const BuildPackageOptions& build_options,
-                                   const InstalledDatabaseLock& installed_lock,
+                                   const InstallAndBuildDatabaseLock& installed_lock,
                                    const FullPackageSpec& full_spec,
                                    const PathsPortFileProvider& provider,
                                    const IBuildLogsRecorder& build_logs_recorder)
@@ -223,7 +223,8 @@ namespace vcpkg
         auto& fs = paths.get_filesystem();
         auto registry_set = paths.make_registry_set();
         PathsPortFileProvider provider(*registry_set, make_overlay_provider(fs, paths.overlay_ports));
-        InstalledDatabaseLock installed_lock{fs, paths.installed(), args.wait_for_lock, args.ignore_lock_failures};
+        InstallAndBuildDatabaseLock installed_lock{
+            fs, paths.installed(), paths.buildtrees(), paths.packages(), args.wait_for_lock, args.ignore_lock_failures};
         Checks::exit_with_code(VCPKG_LINE_INFO,
                                command_build_ex(args,
                                                 paths,
@@ -239,7 +240,7 @@ namespace vcpkg
                          const VcpkgPaths& paths,
                          Triplet host_triplet,
                          const BuildPackageOptions& build_options,
-                         const InstalledDatabaseLock& installed_lock,
+                         const InstallAndBuildDatabaseLock& installed_lock,
                          const FullPackageSpec& full_spec,
                          const PathsPortFileProvider& provider,
                          const IBuildLogsRecorder& build_logs_recorder)
@@ -336,8 +337,11 @@ namespace vcpkg
             case BuildResult::Skipped:
             case BuildResult::SkippedByParentHashes:
             case BuildResult::SkippedByDryRun:
+            case BuildResult::SkippedBySkipFailures:
             case BuildResult::Unsupported:
             case BuildResult::Cached:
+            case BuildResult::CascadedDueToSupports:
+            case BuildResult::CascadedDueToBaseline:
             default: Checks::unreachable(VCPKG_LINE_INFO);
         }
     }
@@ -1685,9 +1689,12 @@ namespace vcpkg
             case BuildResult::PostBuildChecksFailed: ++post_build_checks_failed; return;
             case BuildResult::FileConflicts: ++file_conflicts; return;
             case BuildResult::CascadedDueToMissingDependencies: ++cascaded_due_to_missing_dependencies; return;
+            case BuildResult::CascadedDueToSupports: ++cascaded_due_to_supports; return;
+            case BuildResult::CascadedDueToBaseline: ++cascaded_due_to_baseline; return;
             case BuildResult::Skipped: ++skipped; return;
             case BuildResult::SkippedByParentHashes: ++skipped_by_parent_hashes; return;
             case BuildResult::SkippedByDryRun: ++skipped_by_dry_run; return;
+            case BuildResult::SkippedBySkipFailures: ++skipped_by_skip_failures; return;
             case BuildResult::Unsupported: ++unsupported; return;
             case BuildResult::CacheMissing: ++cache_missing; return;
             case BuildResult::Cached: ++cached; return;
@@ -1720,9 +1727,12 @@ namespace vcpkg
         append_build_result_summary_line(msgBuildResultFileConflicts, file_conflicts, str);
         append_build_result_summary_line(
             msgBuildResultCascadeDueToMissingDependencies, cascaded_due_to_missing_dependencies, str);
+        append_build_result_summary_line(msgBuildResultCascadeDueToSupports, cascaded_due_to_supports, str);
+        append_build_result_summary_line(msgBuildResultCascadeDueToBaseline, cascaded_due_to_baseline, str);
         append_build_result_summary_line(msgBuildResultSkipped, skipped, str);
         append_build_result_summary_line(msgBuildResultSkippedByParentHashes, skipped_by_parent_hashes, str);
         append_build_result_summary_line(msgBuildResultSkippedByDryRun, skipped_by_dry_run, str);
+        append_build_result_summary_line(msgBuildResultSkippedBySkipFailures, skipped_by_skip_failures, str);
         append_build_result_summary_line(msgBuildResultUnsupported, unsupported, str);
         append_build_result_summary_line(msgBuildResultCacheMissing, cache_missing, str);
         append_build_result_summary_line(msgBuildResultCached, cached, str);
@@ -1740,9 +1750,12 @@ namespace vcpkg
             case BuildResult::PostBuildChecksFailed: return "POST_BUILD_CHECKS_FAILED";
             case BuildResult::FileConflicts: return "FILE_CONFLICTS";
             case BuildResult::CascadedDueToMissingDependencies: return "CASCADED_DUE_TO_MISSING_DEPENDENCIES";
+            case BuildResult::CascadedDueToSupports: return "CASCADED_DUE_TO_SUPPORTS";
+            case BuildResult::CascadedDueToBaseline: return "CASCADED_DUE_TO_BASELINE";
             case BuildResult::Skipped: return "SKIPPED";
             case BuildResult::SkippedByParentHashes: return "SKIPPED_BY_PARENT_HASHES";
             case BuildResult::SkippedByDryRun: return "SKIPPED_BY_DRY_RUN";
+            case BuildResult::SkippedBySkipFailures: return "SKIPPED_BY_SKIP_FAILURES";
             case BuildResult::Unsupported: return "UNSUPPORTED";
             case BuildResult::CacheMissing: return "CACHE_MISSING";
             case BuildResult::Cached: return "CACHED";
@@ -1762,9 +1775,12 @@ namespace vcpkg
             case BuildResult::FileConflicts: return msg::format(msgBuildResultFileConflicts);
             case BuildResult::CascadedDueToMissingDependencies:
                 return msg::format(msgBuildResultCascadeDueToMissingDependencies);
+            case BuildResult::CascadedDueToSupports: return msg::format(msgBuildResultCascadeDueToSupports);
+            case BuildResult::CascadedDueToBaseline: return msg::format(msgBuildResultCascadeDueToBaseline);
             case BuildResult::Skipped: return msg::format(msgBuildResultSkipped);
             case BuildResult::SkippedByParentHashes: return msg::format(msgBuildResultSkippedByParentHashes);
             case BuildResult::SkippedByDryRun: return msg::format(msgBuildResultSkippedByDryRun);
+            case BuildResult::SkippedBySkipFailures: return msg::format(msgBuildResultSkippedBySkipFailures);
             case BuildResult::Unsupported: return msg::format(msgBuildResultUnsupported);
             case BuildResult::CacheMissing: return msg::format(msgBuildResultCacheMissing);
             case BuildResult::Cached: return msg::format(msgBuildResultCached);
