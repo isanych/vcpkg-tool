@@ -433,6 +433,7 @@ target_link_libraries(vcpkglib
         Threads::Threads
     PRIVATE
         ${CPP_ATOMIC_LIBRARY}
+        ${CMAKE_DL_LIBS}
 )
 if(VCPKG_FUZZER_INSTRUMENTATION)
     target_link_libraries(vcpkglib PUBLIC vcpkg-fuzzer-instrumentation)
