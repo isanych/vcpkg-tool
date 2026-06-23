@@ -6883,6 +6883,15 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
+      <Item ItemId=";HelpTxtOptSkipInstallIfCached" ItemType="0" PsrId="306" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Skips the installation of packages if every package is already cached]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Ignora a instalação de pacotes se todos os pacotes já estiverem armazenados em cache]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
       <Item ItemId=";HelpTxtOptUseHeadVersion" ItemType="0" PsrId="306" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Installs the libraries on the command line using the latest upstream sources (classic mode)]]></Val>
@@ -9055,6 +9064,15 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
+      <Item ItemId=";PackagesCached" ItemType="0" PsrId="306" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[All packages already exist in the binary cache. Installation skipped.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Todos os pacotes já existem no cache binário. Instalação ignorada.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
       <Item ItemId=";PackagesToInstall" ItemType="0" PsrId="306" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[The following packages will be built and installed:]]></Val>
@@ -10321,11 +10339,29 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
-      <Item ItemId=";StoreOptionMissingSha" ItemType="0" PsrId="306" Leaf="true">
+      <Item ItemId=";StoreAssetShaWithoutAssetCache" ItemType="0" PsrId="306" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[--store option is invalid without a sha512]]></Val>
+          <Val><![CDATA[requested store of asset cache entry {sha} -> {path}, but no writable asset cache is configured]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[--store opção é inválida sem um sha512]]></Val>
+            <Val><![CDATA[repositório solicitado da entrada de cache de ativos {sha} -> {path}, mas nenhum cache de ativo gravável está configurado]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";StoreAssetSuccess" ItemType="0" PsrId="306" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[stored {path} in asset cache at {url}]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[armazenado {path} no cache de ativos em {url}]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";StoreUsingSha" ItemType="0" PsrId="306" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Using {sha} to store entry in asset cache]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Usando {sha} para armazenar a entrada no cache de ativos]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -11649,12 +11685,12 @@
       </Item>
       <Item ItemId=";VcpkgCeIsExperimental" ItemType="0" PsrId="306" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[vcpkg-artifacts is experimental and may change at any time.]]></Val>
+          <Val><![CDATA[vcpkg artifacts will be removed shortly after July 1, 2026.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[vcpkg-artifacts é experimental e pode mudar a qualquer momento.]]></Val>
+            <Val><![CDATA[os artefatos vcpkg serão removidos logo após 1º de julho de 2026.]]></Val>
           </Tgt>
           <Prev Cat="Text">
-            <Val><![CDATA[vcpkg-ce ('configure environment') is experimental and may change at any time.]]></Val>
+            <Val><![CDATA[vcpkg-artifacts is experimental and may change at any time.]]></Val>
           </Prev>
         </Str>
         <Disp Icon="Str" />

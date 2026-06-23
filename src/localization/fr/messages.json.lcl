@@ -6883,6 +6883,15 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
+      <Item ItemId=";HelpTxtOptSkipInstallIfCached" ItemType="0" PsrId="306" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Skips the installation of packages if every package is already cached]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Ignore l’installation des paquets si tous les paquets sont déjà mis en cache]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
       <Item ItemId=";HelpTxtOptUseHeadVersion" ItemType="0" PsrId="306" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Installs the libraries on the command line using the latest upstream sources (classic mode)]]></Val>
@@ -9055,6 +9064,15 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
+      <Item ItemId=";PackagesCached" ItemType="0" PsrId="306" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[All packages already exist in the binary cache. Installation skipped.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Tous les paquets existent déjà dans le cache binaire. L’installation est ignorée.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
       <Item ItemId=";PackagesToInstall" ItemType="0" PsrId="306" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[The following packages will be built and installed:]]></Val>
@@ -10321,11 +10339,29 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
-      <Item ItemId=";StoreOptionMissingSha" ItemType="0" PsrId="306" Leaf="true">
+      <Item ItemId=";StoreAssetShaWithoutAssetCache" ItemType="0" PsrId="306" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[--store option is invalid without a sha512]]></Val>
+          <Val><![CDATA[requested store of asset cache entry {sha} -> {path}, but no writable asset cache is configured]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[L’option --store n’est pas valide sans sha512.]]></Val>
+            <Val><![CDATA[magasin demandé de l’entrée du cache de ressources {sha} -> {path}, mais aucun cache de ressources accessible en écriture n’est configuré]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";StoreAssetSuccess" ItemType="0" PsrId="306" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[stored {path} in asset cache at {url}]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[{path} stocké dans le cache de ressources à l’adresse {url}]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";StoreUsingSha" ItemType="0" PsrId="306" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Using {sha} to store entry in asset cache]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Utilisation de {sha} pour stocker l’entrée dans le cache de ressources]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -11649,12 +11685,12 @@
       </Item>
       <Item ItemId=";VcpkgCeIsExperimental" ItemType="0" PsrId="306" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[vcpkg-artifacts is experimental and may change at any time.]]></Val>
+          <Val><![CDATA[vcpkg artifacts will be removed shortly after July 1, 2026.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[vcpkg-artifacts est expérimental et peut changer à tout moment.]]></Val>
+            <Val><![CDATA[vcpkg-artifacts sera supprimé peu après le 1er juillet 2026.]]></Val>
           </Tgt>
           <Prev Cat="Text">
-            <Val><![CDATA[vcpkg-ce ('configure environment') is experimental and may change at any time.]]></Val>
+            <Val><![CDATA[vcpkg-artifacts is experimental and may change at any time.]]></Val>
           </Prev>
         </Str>
         <Disp Icon="Str" />

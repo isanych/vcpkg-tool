@@ -1735,6 +1735,10 @@ DECLARE_MESSAGE(HelpTxtOptManifestNoDefault,
                 "Does not install the default features from the top-level manifest (manifest mode)")
 DECLARE_MESSAGE(HelpTxtOptNoDownloads, (), "", "Does not download new sources")
 DECLARE_MESSAGE(HelpTxtOptNoUsage, (), "", "Does not print CMake usage information after install")
+DECLARE_MESSAGE(HelpTxtOptSkipInstallIfCached,
+                (),
+                "",
+                "Skips the installation of packages if every package is already cached")
 DECLARE_MESSAGE(HelpTxtOptOnlyBinCache, (), "", "Fails if cached binaries are not available")
 DECLARE_MESSAGE(HelpTxtOptOnlyDownloads, (), "", "Makes best-effort attempt to download sources without building")
 DECLARE_MESSAGE(HelpTxtOptRecurse, (), "", "Allows removal of packages as part of installation")
@@ -2331,6 +2335,7 @@ DECLARE_MESSAGE(PackageManipulationHeader, (), "", "Package Manipulation")
 DECLARE_MESSAGE(PackageInfoHelp, (), "", "Display detailed information on packages")
 DECLARE_MESSAGE(PackageInstallationHeader, (), "", "Package Installation")
 DECLARE_MESSAGE(PackageRootDir, (), "", "Packages directory (experimental)")
+DECLARE_MESSAGE(PackagesCached, (), "", "All packages already exist in the binary cache. Installation skipped.")
 DECLARE_MESSAGE(PackagesToInstall, (), "", "The following packages will be built and installed:")
 DECLARE_MESSAGE(PackagesToModify, (), "", "Additional packages (*) will be modified to complete this operation.")
 DECLARE_MESSAGE(PackagesToRebuild, (), "", "The following packages will be rebuilt:")
@@ -3147,7 +3152,7 @@ DECLARE_MESSAGE(Utf8ConversionFailed, (), "", "Failed to convert to UTF-8")
 DECLARE_MESSAGE(VcpkgCeIsExperimental,
                 (),
                 "The name of the feature is 'vcpkg-artifacts' and should be singular despite ending in s",
-                "vcpkg-artifacts is experimental and may change at any time.")
+                "vcpkg artifacts will be removed shortly after July 1, 2026.")
 DECLARE_MESSAGE(
     VcpkgCompletion,
     (msg::value, msg::path),

@@ -826,7 +826,8 @@ namespace vcpkg
 
         auto cmd = vcpkg::make_cmake_cmd(paths, paths.ports_cmake, std::move(cmake_args));
         RedirectedProcessLaunchSettings settings;
-        settings.environment.emplace(paths.get_action_env(pre_build_info, toolset));
+        auto& env = settings.environment.emplace(paths.get_action_env(pre_build_info, toolset));
+        env.add_remove_entry(EnvironmentVariableDestDir);
         auto& fs = paths.get_filesystem();
         fs.create_directory(buildpath, VCPKG_LINE_INFO);
         auto stdoutlog = buildpath / ("stdout-" + triplet.canonical_name() + ".log");
@@ -1050,6 +1051,10 @@ namespace vcpkg
         {
             return m_paths.scripts / "toolchains/ios.cmake";
         }
+        else if (cmake_system_name == "OHOS")
+        {
+            return m_paths.scripts / "toolchains/ohos.cmake";
+        }
         else
         {
             Checks::msg_exit_with_message(VCPKG_LINE_INFO,
@@ -1188,6 +1193,7 @@ namespace vcpkg
 
         RedirectedProcessLaunchSettings settings;
         auto& env = settings.environment.emplace(paths.get_action_env(*abi_info.pre_build_info, *toolset));
+        env.add_remove_entry(EnvironmentVariableDestDir);
 
         auto buildpath = paths.build_dir(action.spec.name());
         fs.create_directory(buildpath, VCPKG_LINE_INFO);

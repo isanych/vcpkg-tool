@@ -6883,6 +6883,15 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
+      <Item ItemId=";HelpTxtOptSkipInstallIfCached" ItemType="0" PsrId="306" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Skips the installation of packages if every package is already cached]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Tüm paketler önbellekte mevcutsa, paketi yüklemeyi atlar]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
       <Item ItemId=";HelpTxtOptUseHeadVersion" ItemType="0" PsrId="306" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[Installs the libraries on the command line using the latest upstream sources (classic mode)]]></Val>
@@ -9058,6 +9067,15 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
+      <Item ItemId=";PackagesCached" ItemType="0" PsrId="306" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[All packages already exist in the binary cache. Installation skipped.]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Tüm paketler ikili önbellekte zaten mevcut. Yükleme atlandı.]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
       <Item ItemId=";PackagesToInstall" ItemType="0" PsrId="306" Leaf="true">
         <Str Cat="Text">
           <Val><![CDATA[The following packages will be built and installed:]]></Val>
@@ -10324,11 +10342,29 @@
         </Str>
         <Disp Icon="Str" />
       </Item>
-      <Item ItemId=";StoreOptionMissingSha" ItemType="0" PsrId="306" Leaf="true">
+      <Item ItemId=";StoreAssetShaWithoutAssetCache" ItemType="0" PsrId="306" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[--store option is invalid without a sha512]]></Val>
+          <Val><![CDATA[requested store of asset cache entry {sha} -> {path}, but no writable asset cache is configured]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[--store seçeneği sha512 olmadan geçersiz]]></Val>
+            <Val><![CDATA[varlık önbellek girdisi {sha} -> {path} deposu istendi ancak yazılabilir bir varlık önbelleği yapılandırılmadı]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";StoreAssetSuccess" ItemType="0" PsrId="306" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[stored {path} in asset cache at {url}]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[{path}, {url} adresindeki varlık önbelleğinde depolandı]]></Val>
+          </Tgt>
+        </Str>
+        <Disp Icon="Str" />
+      </Item>
+      <Item ItemId=";StoreUsingSha" ItemType="0" PsrId="306" InstFlg="true" Leaf="true">
+        <Str Cat="Text">
+          <Val><![CDATA[Using {sha} to store entry in asset cache]]></Val>
+          <Tgt Cat="Text" Stat="Loc" Orig="New">
+            <Val><![CDATA[Girdiyi varlık önbelleğinde depolamak için {sha} kullanılıyor]]></Val>
           </Tgt>
         </Str>
         <Disp Icon="Str" />
@@ -11652,12 +11688,12 @@
       </Item>
       <Item ItemId=";VcpkgCeIsExperimental" ItemType="0" PsrId="306" InstFlg="true" Leaf="true">
         <Str Cat="Text">
-          <Val><![CDATA[vcpkg-artifacts is experimental and may change at any time.]]></Val>
+          <Val><![CDATA[vcpkg artifacts will be removed shortly after July 1, 2026.]]></Val>
           <Tgt Cat="Text" Stat="Loc" Orig="New">
-            <Val><![CDATA[vcpkg-artifacts deneyseldir ve herhangi bir zamanda değişebilir.]]></Val>
+            <Val><![CDATA[vcpkg yapıtları, 1 Temmuz 2026'dan kısa bir süre sonra kaldırılacaktır.]]></Val>
           </Tgt>
           <Prev Cat="Text">
-            <Val><![CDATA[vcpkg-ce ('configure environment') is experimental and may change at any time.]]></Val>
+            <Val><![CDATA[vcpkg-artifacts is experimental and may change at any time.]]></Val>
           </Prev>
         </Str>
         <Disp Icon="Str" />
