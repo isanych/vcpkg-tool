@@ -125,7 +125,20 @@ namespace
                            .append(msgApplocalProcessing)
                            .append_raw('\n'));
 
-            auto dll_file = m_fs.open_for_read(binary, VCPKG_LINE_INFO);
+            std::error_code open_ec;
+            auto dll_file = m_fs.open_for_read(binary, open_ec);
+#if defined(_WIN32)
+            for (int retry = 0; retry < 10 && open_ec.value() == ERROR_SHARING_VIOLATION; ++retry)
+            {
+                ::Sleep(100);
+                open_ec.clear();
+                dll_file = m_fs.open_for_read(binary, open_ec);
+            }
+#endif // defined(_WIN32)
+            if (open_ec)
+            {
+                exit_filesystem_call_error(VCPKG_LINE_INFO, open_ec, "open_for_read", {binary});
+            }
             const auto dll_metadata = vcpkg::try_read_dll_metadata_required(dll_file).value_or_exit(VCPKG_LINE_INFO);
             const auto imported_names =
                 vcpkg::try_read_dll_imported_dll_names(dll_metadata, dll_file).value_or_exit(VCPKG_LINE_INFO);
@@ -629,6 +642,16 @@ namespace vcpkg
 
         std::error_code ec;
         auto dll_file = fs.open_for_read(target_binary_path, ec);
+#if defined(_WIN32)
+        // Windows security software (Defender, AV, AppCompat) briefly opens new executables
+        // with exclusive access right after creation; retry rather than failing the build.
+        for (int retry = 0; retry < 10 && ec.value() == ERROR_SHARING_VIOLATION; ++retry)
+        {
+            ::Sleep(100);
+            ec.clear();
+            dll_file = fs.open_for_read(target_binary_path, ec);
+        }
+#endif // defined(_WIN32)
         if (ec)
         {
             auto io_error = ec.message();
