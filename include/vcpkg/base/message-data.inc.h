@@ -168,6 +168,11 @@ DECLARE_MESSAGE(APackagePatternArray, (), "", "a package pattern array")
 DECLARE_MESSAGE(APath, (), "", "a path")
 DECLARE_MESSAGE(AppliedUserIntegration, (), "", "Applied user-wide integration for this vcpkg root.")
 DECLARE_MESSAGE(ApplocalProcessing, (), "", "deploying dependencies")
+DECLARE_MESSAGE(ApplocalSymlinkPrivilegeRequired,
+                (msg::path),
+                "",
+                "unable to create symlink at {path}: creating symlinks on Windows requires Developer Mode to be "
+                "enabled or running as an administrator")
 DECLARE_MESSAGE(ArchiverFailedToExtractExitCode, (msg::exit_code), "", "failed to extract with exit code {exit_code}")
 DECLARE_MESSAGE(ArchiveHere, (), "", "the archive is here")
 DECLARE_MESSAGE(ARegistry, (), "", "a registry")
@@ -905,6 +910,10 @@ DECLARE_MESSAGE(CmdXDownloadOptSha, (), "", "The hash of the file to be download
 DECLARE_MESSAGE(CmdXDownloadOptSkipSha, (), "", "Skips check of SHA512 of the downloaded file")
 DECLARE_MESSAGE(CmdXDownloadOptStore, (), "", "Stores the the file should father than fetching it")
 DECLARE_MESSAGE(CmdXDownloadOptUrl, (), "", "URL to download and store if missing from cache")
+DECLARE_MESSAGE(CmdZApplocalOptSymlink,
+                (),
+                "",
+                "Deploy dependencies as symlinks to the installed tree instead of copying them")
 DECLARE_MESSAGE(
     CmdZApplocalSynopsis,
     (),

@@ -283,6 +283,7 @@ namespace vcpkg
     inline constexpr StringLiteral SwitchSort = "sort";
     inline constexpr StringLiteral SwitchStore = "store";
     inline constexpr StringLiteral SwitchStrip = "strip";
+    inline constexpr StringLiteral SwitchSymlink = "symlink";
     inline constexpr StringLiteral SwitchTLogFile = "tlog-file";
     inline constexpr StringLiteral SwitchTargetArm = "target:arm";
     inline constexpr StringLiteral SwitchTargetArm64 = "target:arm64";

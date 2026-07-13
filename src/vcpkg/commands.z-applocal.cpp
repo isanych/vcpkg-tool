@@ -92,6 +92,7 @@ namespace
                            const Path& installed_bin_dir,
                            const Path& installed,
                            bool is_debug,
+                           bool use_symlinks,
 #if defined(_WIN32)
                            WriteFilePointer&& tlog_file,
 #endif // ^^^ _WIN32
@@ -101,6 +102,7 @@ namespace
             , m_installed_bin_dir(installed_bin_dir)
             , m_installed(installed)
             , m_is_debug(is_debug)
+            , m_use_symlinks(use_symlinks)
 #if defined(_WIN32)
             , m_tlog_file(std::move(tlog_file))
 #endif // ^^^ _WIN32
@@ -128,9 +130,9 @@ namespace
             std::error_code open_ec;
             auto dll_file = m_fs.open_for_read(binary, open_ec);
 #if defined(_WIN32)
-            for (int retry = 0; retry < 10 && open_ec.value() == ERROR_SHARING_VIOLATION; ++retry)
+            for (int retry = 0; retry < 20 && open_ec.value() == ERROR_SHARING_VIOLATION; ++retry)
             {
-                ::Sleep(100);
+                ::Sleep(200);
                 open_ec.clear();
                 dll_file = m_fs.open_for_read(binary, open_ec);
             }
@@ -505,6 +507,34 @@ namespace
             }
         }
 
+        // Replaces any existing file or symlink at target with a symlink pointing at source.
+        // Returns false (with is_not_found_errc(ec)) if source doesn't exist, matching copy_file's contract.
+        bool deploy_symlink(const Path& source, const Path& target, std::error_code& ec)
+        {
+            if (!m_fs.exists(source, VCPKG_LINE_INFO))
+            {
+                ec = std::make_error_code(std::errc::no_such_file_or_directory);
+                return false;
+            }
+
+            m_fs.remove(target, VCPKG_LINE_INFO);
+            m_fs.create_symlink(source, target, ec);
+            if (ec)
+            {
+#if defined(_WIN32)
+                if (ec == std::error_code(ERROR_PRIVILEGE_NOT_HELD, std::system_category()))
+                {
+                    Checks::msg_exit_with_error(
+                        VCPKG_LINE_INFO, msgApplocalSymlinkPrivilegeRequired, msg::path = target);
+                }
+#endif // defined(_WIN32)
+                return false;
+            }
+
+            ec.clear();
+            return true;
+        }
+
         bool deploy_binary(const Path& target_binary_dir, const Path& installed_dir, StringView target_binary_name)
         {
             auto source = installed_dir / target_binary_name;
@@ -520,7 +550,9 @@ namespace
 #endif // ^^^ !_WIN32
 
             std::error_code ec;
-            const bool did_deploy = m_fs.copy_file(source, target, CopyOptions::update_existing, ec);
+            const bool did_deploy = m_use_symlinks
+                                        ? deploy_symlink(source, target, ec)
+                                        : m_fs.copy_file(source, target, CopyOptions::update_existing, ec);
             if (did_deploy)
             {
                 msg::println(msgInstallCopiedFile, msg::path_source = source, msg::path_destination = target);
@@ -533,6 +565,11 @@ namespace
             {
                 Debug::println("Attempted to deploy ", source, ", but it didn't exist");
                 return false;
+            }
+            else if (m_use_symlinks)
+            {
+                Checks::msg_exit_with_message(VCPKG_LINE_INFO,
+                                               format_filesystem_call_error(ec, "create_symlink", {source, target}));
             }
             else
             {
@@ -569,6 +606,7 @@ namespace
         Path m_installed_bin_dir;
         Path m_installed;
         bool m_is_debug;
+        bool m_use_symlinks;
 #if defined(_WIN32)
         WriteFilePointer m_tlog_file;
 #endif // ^^^ _WIN32
@@ -581,6 +619,10 @@ namespace
 #if !defined(_WIN32)
         Path m_temp_dir;
 #endif // ^^^ !_WIN32
+    };
+
+    constexpr CommandSwitch SWITCHES[] = {
+        {SwitchSymlink, msgCmdZApplocalOptSymlink},
     };
 
     constexpr CommandSetting SETTINGS[] = {
@@ -609,7 +651,7 @@ namespace vcpkg
         AutocompletePriority::Internal,
         0,
         0,
-        {{}, SETTINGS},
+        {SWITCHES, SETTINGS},
         nullptr,
     };
 
@@ -631,6 +673,7 @@ namespace vcpkg
         const auto target_installed_bin_dir =
             fs.almost_canonical(target_installed_bin_setting->second, VCPKG_LINE_INFO);
         const auto decoded = decode_from_canonical_bin_dir(target_installed_bin_dir);
+        const bool use_symlinks = Util::Sets::contains(parsed.switches, SwitchSymlink);
 
         // the first binary is special in that it might not be a DLL or might not exist
         const Path target_binary_path = target_binary->second;
@@ -645,9 +688,9 @@ namespace vcpkg
 #if defined(_WIN32)
         // Windows security software (Defender, AV, AppCompat) briefly opens new executables
         // with exclusive access right after creation; retry rather than failing the build.
-        for (int retry = 0; retry < 10 && ec.value() == ERROR_SHARING_VIOLATION; ++retry)
+        for (int retry = 0; retry < 20 && ec.value() == ERROR_SHARING_VIOLATION; ++retry)
         {
-            ::Sleep(100);
+            ::Sleep(200);
             ec.clear();
             dll_file = fs.open_for_read(target_binary_path, ec);
         }
@@ -700,6 +743,7 @@ namespace vcpkg
                                       target_installed_bin_dir,
                                       decoded.installed_root,
                                       decoded.is_debug,
+                                      use_symlinks,
 #if defined(_WIN32)
                                       maybe_create_log(parsed.settings, SwitchTLogFile, fs),
 #endif // ^^^ _WIN32
