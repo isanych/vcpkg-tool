@@ -42,9 +42,11 @@
 - Tests are built into `vcpkg-test` from `src/vcpkg-test/*.cpp` (Catch2), plus small helper executables (`reads-stdin`, `test-editor`, etc.) used by tests.
 - The `vcpkg-artifacts` TypeScript code is bundled into `vcpkg-artifacts.mjs` during CMake builds only when `VCPKG_ARTIFACTS_DEVELOPMENT=ON` (enabled by CI presets).
 - Localization is a first-class pipeline: message declarations in `include/vcpkg/base/message-data.inc.h`, generated maps in `locales/messages.json`, and enforcement via `generate-message-map` + `verify-messages`.
+- The files under `locales/` are generated output and are usually not worth review comments; if you need to comment on message content, direct that feedback to `include/vcpkg/base/message-data.inc.h` instead.
 
 ## Key conventions
 
+- Update the vcpkg scripts SHA with `vcpkg-init/update-scripts-sha.ps1`; pass `-Sha <commit>` to use a specific commit instead of the current `microsoft/vcpkg` `master`.
 - New commands follow `docs/command-guidelines.md`:
   - file name pattern `commands.<command-name>.cpp` (dashes, not underscores),
   - register command metadata/dispatch in `commands.cpp`,
