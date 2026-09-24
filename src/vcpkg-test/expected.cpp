@@ -384,7 +384,7 @@ TEST_CASE ("value_or", "[expected]")
 {
     std::string value = "hello";
     std::string fill_in_value = "world";
-    int error;
+    int error = 0;
 
     SECTION ("with_value")
     {
