@@ -1,4 +1,4 @@
-﻿{
+{
   "ABaseline": "基準",
   "ABaselineObject": "基底物件",
   "ABoolean": "布林值",
@@ -164,6 +164,8 @@
   "BaselineMissing": "{package_name} 未獲指派版本",
   "BaselineOnlyPlatformExpressionOrTriplet": "您不能同時指定平台運算式和三元組",
   "BinariesRelativeToThePackageDirectoryHere": "二進位檔案是相對於這裡的 ${{CURRENT_PACKAGES_DIR}}",
+  "BinaryCacheCompressionLevelHelp": "二進位快取 ZIP 壓縮等級 (0-9)。覆寫 VCPKG_BINARY_CACHE_COMPRESSION_LEVEL；未設定時使用封存工具的預設值。",
+  "BinaryCacheSubmissionFailed": "二進位快取提交失敗",
   "BinarySourcesArg": "二進位快取來源。請參閱 'vcpkg help binarycaching'",
   "BinaryWithInvalidArchitecture": "{path} 是專為 {arch} 打造",
   "BuildAlreadyInstalled": "{spec} 已安裝; 請先移除 {spec}，再嘗試建置。",
@@ -262,8 +264,8 @@
   "CmdDeactivateSynopsis": "從目前的殼層移除所有成品啟用",
   "CmdDependInfoExample1": "vcpkg depend-info <連接埠名稱>",
   "CmdDependInfoFormatConflict": "指定的格式發生衝突。僅接受 --format、--dgml 或 --dot 其中之一。",
-  "CmdDependInfoFormatHelp": "選擇輸出格式: `list`、`tree`、`mermaid`、`dot` 或 `dgml` 之一",
-  "CmdDependInfoFormatInvalid": "--format={value} 不是可辨識的格式。--format 必須 是 `list`、`tree`、`mermaid`、`dot` 或 `dgml` 其中之一。",
+  "CmdDependInfoFormatHelp": "Chooses output format, one of `list`, `tree`, `mermaid`, `dot`, `dgml`, or `json`",
+  "CmdDependInfoFormatInvalid": "--format={value} is not a recognized format. --format must be one of `list`, `tree`, `mermaid`, `dot`, `dgml`, or `json`.",
   "CmdDependInfoOptDepth": "在 `list` 輸出中顯示遞迴深度",
   "CmdDependInfoOptMaxRecurse": "設定遞迴深度上限。預設值為無限制",
   "CmdDependInfoOptSort": "選擇 `list` 格式的排序順序，`lexicographical`、`topological` (預設)、`reverse` 之一",
@@ -727,6 +729,7 @@
   "InvalidArgumentRequiresSourceArgument": "引數無效: 二進位設定檔 '{binary_source}' 至少需要一個來源引數",
   "InvalidArgumentRequiresTwoOrThreeArguments": "引數無效: 二進位 config '{binary_source}' 需要 2 或 3 個引數",
   "InvalidArgumentRequiresValidToken": "引數無效: 二進位 config '{binary_source}' 需要 SAS 權杖，而前一個引數沒有 '?' 做為第二個引數",
+  "InvalidBinaryCacheCompressionLevel": "無效的二進位快取壓縮層級 '{value}'。--binary-cache-compression-level 和 VCPKG_BINARY_CACHE_COMPRESSION_LEVEL 需要 (0-9) 的單一數字。",
   "InvalidBuildInfo": "套件的 BUILD_INFO 檔案無效: {error_msg}",
   "InvalidBuiltInBaseline": "上層內建基準 ({value}) 不是有效的認可 SHA: 預期為 40 個十六進位字元。",
   "InvalidBundleDefinition": "無效的搭售方案定義。",

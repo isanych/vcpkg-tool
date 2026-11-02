@@ -1,4 +1,4 @@
-﻿{
+{
   "ABaseline": "基线",
   "ABaselineObject": "基对象",
   "ABoolean": "布尔值",
@@ -164,6 +164,8 @@
   "BaselineMissing": "{package_name} 未分配版本",
   "BaselineOnlyPlatformExpressionOrTriplet": "无法指定平台表达式和三元组",
   "BinariesRelativeToThePackageDirectoryHere": "二进制文件相对于此处的 ${{CURRENT_PACKAGES_DIR}}",
+  "BinaryCacheCompressionLevelHelp": "二进制缓存 ZIP 压缩级别(0-9)。替代 VCPKG_BINARY_CACHE_COMPRESSION_LEVEL；取消设置将使用存档工具默认值。",
+  "BinaryCacheSubmissionFailed": "二进制缓存提交失败",
   "BinarySourcesArg": "二进制缓存源。请参阅“vcpkg 帮助 binarycaching”。",
   "BinaryWithInvalidArchitecture": "{path} 专为 {arch} 生成",
   "BuildAlreadyInstalled": "已安装{spec}；请在尝试生成之前先删除{spec}。",
@@ -262,8 +264,8 @@
   "CmdDeactivateSynopsis": "从当前 shell 中删除所有项目激活",
   "CmdDependInfoExample1": "vcpkg depend-info <port name>",
   "CmdDependInfoFormatConflict": "指定的格式冲突。只接受 --format、--dgml 或 --dot 中的一个。",
-  "CmdDependInfoFormatHelp": "选择输出格式，从 `list`、`tree`、 `mermaid`、`dot` 或 `dgml` 中选择一个",
-  "CmdDependInfoFormatInvalid": "--format={value} 不是可识别的格式。--format 必须是 `list`、`tree`、 `mermaid`、`dot` 或 `dgml` 中的一个。",
+  "CmdDependInfoFormatHelp": "Chooses output format, one of `list`, `tree`, `mermaid`, `dot`, `dgml`, or `json`",
+  "CmdDependInfoFormatInvalid": "--format={value} is not a recognized format. --format must be one of `list`, `tree`, `mermaid`, `dot`, `dgml`, or `json`.",
   "CmdDependInfoOptDepth": "在 `list` 输出中显示递归深度",
   "CmdDependInfoOptMaxRecurse": "设置最大递归深度。默认值没有限制",
   "CmdDependInfoOptSort": "选择 `list` 格式的排序顺序，从 `lexicographical`、`topological` (默认) 和 `reverse` 中选择一个",
@@ -727,6 +729,7 @@
   "InvalidArgumentRequiresSourceArgument": "参数无效: 二进制配置“{binary_source}”至少需要一个源参数",
   "InvalidArgumentRequiresTwoOrThreeArguments": "参数无效: 二进制配置“{binary_source}”需要 2 或 3 个参数",
   "InvalidArgumentRequiresValidToken": "参数无效: 二进制配置“{binary_source}”需要 SAS 令牌，不需要将前面的“?”作为第二个参数",
+  "InvalidBinaryCacheCompressionLevel": "二进制缓存压缩级别“{value}”无效。--binary-cache-compression 级别和 VCPKG_BINARY_CACHE_COMPRESSION_LEVEL 需要一位数字(0-9)。",
   "InvalidBuildInfo": "包的 BUILD_INFO 文件无效: {error_msg}",
   "InvalidBuiltInBaseline": "顶级内置基线({value})不是有效的提交 sha: 应为 40 个十六进制字符。",
   "InvalidBundleDefinition": "捆绑包定义无效。",
