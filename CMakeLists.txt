@@ -60,29 +60,34 @@ if(VCPKG_EMBED_GIT_SHA)
     if(DEFINED VCPKG_VERSION)
         message(STATUS "Using supplied version SHA ${VCPKG_VERSION}.")
     else()
-        find_package(Git REQUIRED)
-        execute_process(
-            COMMAND "${GIT_EXECUTABLE}" status --porcelain=v1
-            WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
-            OUTPUT_VARIABLE VCPKG_GIT_STATUS
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-
-        if(VCPKG_GIT_STATUS STREQUAL "")
+        # git is only needed here, and only to look up the SHA; pass -DVCPKG_VERSION=<sha> to build without git.
+        find_package(Git QUIET)
+        if(NOT GIT_FOUND)
+            message(WARNING "Skipping embedding SHA because git was not found; supply VCPKG_VERSION to embed one.")
+        else()
             execute_process(
-                COMMAND "${GIT_EXECUTABLE}" rev-parse HEAD
+                COMMAND "${GIT_EXECUTABLE}" status --porcelain=v1
                 WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
-                OUTPUT_VARIABLE VCPKG_VERSION
+                OUTPUT_VARIABLE VCPKG_GIT_STATUS
                 OUTPUT_STRIP_TRAILING_WHITESPACE
             )
-        else()
-            message(WARNING "Skipping embedding SHA due to local changes.")
+
+            if(VCPKG_GIT_STATUS STREQUAL "")
+                execute_process(
+                    COMMAND "${GIT_EXECUTABLE}" rev-parse HEAD
+                    WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+                    OUTPUT_VARIABLE VCPKG_VERSION
+                    OUTPUT_STRIP_TRAILING_WHITESPACE
+                )
+            else()
+                message(WARNING "Skipping embedding SHA due to local changes.")
+            endif()
         endif()
     endif()
 endif()
 
 if(NOT DEFINED VCPKG_VERSION OR VCPKG_VERSION STREQUAL "")
-    set(VCPKG_VERSION "unknownhash")
+    set(VCPKG_VERSION "0")
 endif()
 
 if(NOT DEFINED VCPKG_BASE_VERSION OR VCPKG_BASE_VERSION STREQUAL "")
@@ -91,7 +96,7 @@ if(NOT DEFINED VCPKG_BASE_VERSION OR VCPKG_BASE_VERSION STREQUAL "")
     endif()
 
     # The first digit is 2 to work with vcpkg_minimum_required in scripts.
-    set(VCPKG_BASE_VERSION "2999-12-31")
+    set(VCPKG_BASE_VERSION "2026.4")
 endif()
 
 set(CMAKE_CXX_EXTENSIONS OFF)

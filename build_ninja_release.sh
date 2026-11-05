@@ -6,3 +6,4 @@ export CXX=`which g++`
 cmake "$d" -Wno-dev -GNinja -DCMAKE_BUILD_TYPE=Release "$@"
 ninja
 ninja test
+strip vcpkg
