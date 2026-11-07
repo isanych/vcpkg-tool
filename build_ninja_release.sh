@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -xe
 
 d=$(X= cd -- "$(dirname -- "$0")" && pwd -P)
 export CC=`which gcc`
@@ -19,6 +19,6 @@ if [[ "$ART_PUBLISH" != 0 ]]; then
       exit 1
       ;;
   esac
-  tar czf vcpkg-tool-2026.4-${vcpkgToolArch}.tgz vcpkg.exe
+  tar czf vcpkg-tool-2026.4-${vcpkgToolArch}.tgz vcpkg
   artc put vcpkg-tool-2026.4-${vcpkgToolArch}.tgz /vcpkg-tool/
 fi
