@@ -3,9 +3,8 @@
 d=$(X= cd -- "$(dirname -- "$0")" && pwd -P)
 export CC=`which gcc`
 export CXX=`which g++`
-VCPKG_VERSION=$(git describe --match v0)
-VCPKG_VERSION=${VCPKG_VERSION#v0-}
-cmake "$d" -Wno-author -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT:-/opt/vcpkg}/scripts/buildsystems/vcpkg.cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DVCPKG_VERSION="$VCPKG_VERSION" "$@"
+: ${VCPKG_VERSION:=$(git describe --match v0)}
+cmake "$d" -Wno-author -DCMAKE_TOOLCHAIN_FILE=${VCPKG_ROOT:-/opt/vcpkg}/scripts/buildsystems/vcpkg.cmake -GNinja -DCMAKE_BUILD_TYPE=Release -DVCPKG_VERSION="${VCPKG_VERSION#v0-}" "$@"
 ninja
 ninja test
 strip vcpkg
